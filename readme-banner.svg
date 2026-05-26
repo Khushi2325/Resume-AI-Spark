@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="420" viewBox="0 0 1400 420" role="img" aria-labelledby="title desc">
+  <title id="title">Resume AI Spark</title>
+  <desc id="desc">A clean editorial banner for the Resume AI Spark workspace.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="55%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.1 0 1 0 0 0.7 0 0 1 0 0.9 0 0 0 0.45 0"/>
+    </filter>
+  </defs>
+
+  <rect width="1400" height="420" rx="34" fill="url(#bg)"/>
+  <circle cx="1160" cy="90" r="120" fill="#38bdf8" opacity="0.11" filter="url(#softGlow)"/>
+  <circle cx="248" cy="320" r="152" fill="#22c55e" opacity="0.10" filter="url(#softGlow)"/>
+  <path d="M0 322C170 282 322 268 492 279C673 291 785 346 982 335C1130 327 1268 286 1400 248V420H0V322Z" fill="#ffffff" opacity="0.035"/>
+
+  <rect x="88" y="82" width="238" height="46" rx="23" fill="#ffffff" opacity="0.08" stroke="#ffffff" stroke-opacity="0.13"/>
+  <rect x="104" y="95" width="20" height="20" rx="7" fill="#38bdf8"/>
+  <path d="M110 108V102h6c3 0 5 1 5 3s-2 3-5 3h-6z" fill="#ffffff"/>
+  <text x="136" y="111" fill="#f8fafc" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="2.4">RESUME AI SPARK</text>
+
+  <text x="88" y="222" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="80" font-weight="700">Khushi Chorvadi</text>
+  <rect x="90" y="240" width="138" height="6" rx="3" fill="url(#accent)"/>
+  <text x="90" y="288" fill="#dbeafe" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="600">Interactive CV ecosystem for live editing, premium previews, and Gemini assistance.</text>
+  <text x="90" y="326" fill="#cbd5e1" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18">A polished resume workspace built for clarity, speed, and presentation.</text>
+
+  <text x="90" y="380" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" letter-spacing="2">React · Vite · Express · Gemini</text>
+</svg>
