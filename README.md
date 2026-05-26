@@ -2,7 +2,7 @@
 
 ![Project banner](./readme-banner.svg)
 
-A polished resume builder and presentation workspace for Khushi Chorvadi. The app combines a live resume editor, a premium print-ready preview, and a server-side Gemini assistant for rewriting, improving, and applying resume suggestions.
+A polished resume builder and presentation workspace for Khushi Chorvadi. The app combines a live resume editor, a premium print-ready preview, and a clean export flow for creating a strong personal presentation.
 
 ## What it does
 
@@ -11,19 +11,6 @@ A polished resume builder and presentation workspace for Khushi Chorvadi. The ap
 - Gemini-powered chat assistant for resume feedback and rewrite suggestions.
 - Local account/session storage for quick switching between saved workspace state.
 - Export-friendly setup for a clean resume and portfolio-style presentation.
-
-## Why the Gemini API may not work
-
-From the code, Gemini is not called directly from the browser. The frontend sends chat requests to the local server at `/api/chat`, and the server then forwards the request to Gemini using `GEMINI_API_KEY`.
-
-That means the API will fail if any of these are true:
-
-- The Express server is not running.
-- The app is opened as a static site instead of through the server.
-- `GEMINI_API_KEY` is missing, empty, or still set to a placeholder value.
-- The key is valid-looking but has been restricted, revoked, or does not have Gemini access enabled.
-
-If the server is running and the key is valid, the request should reach Gemini through the backend proxy.
 
 ## Getting started
 
