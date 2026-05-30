@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Resume AI Spark</title>
+  <desc id="desc">Spark-style app logo for the Resume AI Spark browser tab.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="#0f172a"/>
+  <rect x="18" y="18" width="220" height="220" rx="48" fill="url(#bg)"/>
+  <circle cx="128" cy="92" r="64" fill="url(#glow)"/>
+  <path d="M128 44l13.5 34.5L176 92l-34.5 13.5L128 140l-13.5-34.5L80 92l34.5-13.5L128 44z" fill="#ffffff"/>
+  <path d="M78 164l8.5 21.5L108 194l-21.5 8.5L78 224l-8.5-21.5L48 194l21.5-8.5L78 164z" fill="#ffffff" fill-opacity="0.9"/>
+  <circle cx="182" cy="168" r="12" fill="#ffffff" fill-opacity="0.9"/>
+</svg>

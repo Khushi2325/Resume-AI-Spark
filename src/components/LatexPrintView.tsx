@@ -4,6 +4,14 @@ import { Phone, Mail, Github, Linkedin, Code } from "lucide-react";
 
 import { isValidLink } from "../utils";
 
+export type ResumeLayout =
+  | "classic"
+  | "modern-left"
+  | "blue-accent"
+  | "compact"
+  | "executive"
+  | "minimal";
+
 interface LatexPrintViewProps {
   data: ResumeData;
   fontSize: number; // in pt
@@ -12,6 +20,7 @@ interface LatexPrintViewProps {
   sectionSpacing: number; // in px
   fontTheme?: "classic-serif" | "modern-sans" | "editorial-lora";
   showIcons?: boolean;
+  resumeLayout?: ResumeLayout;
 }
 
 export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
@@ -22,6 +31,7 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
   sectionSpacing,
   fontTheme = "classic-serif",
   showIcons = false,
+  resumeLayout = "classic",
 }) => {
   const { personalInfo, professionalSummary, education, skills, projects, certifications } = data;
 
@@ -39,6 +49,32 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
     paddingTop: `${margins * 0.8}in`,
     paddingBottom: `${margins * 0.8}in`,
   };
+
+  const isModernLeft = resumeLayout === "modern-left";
+  const isBlueAccent = resumeLayout === "blue-accent";
+  const isCompact = resumeLayout === "compact";
+  const isExecutive = resumeLayout === "executive";
+  const isMinimal = resumeLayout === "minimal";
+  const effectiveSectionSpacing = isCompact ? Math.max(sectionSpacing * 0.55, 3) : isExecutive ? sectionSpacing * 1.15 : sectionSpacing;
+
+  const headerAlignClass = isModernLeft || isExecutive ? "text-left" : "text-center";
+  const headerBoxClass = isExecutive
+    ? "border-b-2 border-neutral-900 pb-3 mb-4"
+    : isBlueAccent
+      ? "border-b-2 border-sky-600 pb-3 mb-4"
+      : isModernLeft
+        ? "border-l-4 border-sky-600 pl-4 pb-1 mb-4"
+        : "mb-4";
+
+  const nameColorClass = isBlueAccent || isModernLeft ? "text-sky-800" : "text-neutral-950";
+  const sectionHeadingClass = isMinimal
+    ? "text-[11pt] font-bold tracking-wide border-b border-neutral-300 pb-[1px] mb-2 text-neutral-900 text-left uppercase"
+    : isBlueAccent || isModernLeft
+      ? "text-[12pt] font-extrabold tracking-wide border-b-[1.5px] border-sky-600 pb-[1.5px] mb-2 text-sky-800 text-left uppercase"
+      : "text-[12.5pt] font-bold tracking-wide border-b-[1.5px] border-neutral-800 pb-[1.5px] mb-2 text-neutral-950 text-left";
+
+  const bulletClass = isBlueAccent || isModernLeft ? "bg-sky-700" : "bg-neutral-950";
+  const projectGapClass = isCompact ? "gap-1.5" : "gap-3";
 
   const contactItems: React.ReactNode[] = [];
   
@@ -116,22 +152,22 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
       style={dynamicStyle}
     >
       {/* ---------- HEADING ---------- */}
-      <div className="text-center mb-4">
+      <div className={`${headerAlignClass} ${headerBoxClass}`}>
         {/* Scholar/Elite Centered Big Bold Name Title */}
         <h1 
-          className={`text-neutral-950 text-center tracking-tight leading-none ${
+          className={`${nameColorClass} ${headerAlignClass} tracking-tight leading-none ${
             fontTheme === "classic-serif" 
-              ? "font-serif text-[22pt] font-bold" 
+              ? `${isCompact ? "text-[19pt]" : "text-[22pt]"} font-serif font-bold`
               : fontTheme === "editorial-lora"
-              ? "font-lora text-[20pt] font-bold"
-              : "font-source text-[19pt] font-bold"
+              ? `${isCompact ? "text-[18pt]" : "text-[20pt]"} font-lora font-bold`
+              : `${isCompact ? "text-[18pt]" : "text-[19pt]"} font-source font-bold`
           }`}
         >
           {personalInfo.name}
         </h1>
         
         {/* Contact Strip matching the provided executive style exactly */}
-        <div className="flex flex-wrap justify-center items-center gap-x-2.5 gap-y-1 mt-2 text-[9.5pt] text-neutral-800 tracking-normal font-normal">
+        <div className={`flex flex-wrap ${isModernLeft || isExecutive ? "justify-start" : "justify-center"} items-center gap-x-2.5 gap-y-1 mt-2 text-[9.5pt] text-neutral-800 tracking-normal font-normal`}>
           {contactItems.map((item, idx) => (
             <React.Fragment key={idx}>
               {idx > 0 && <span className="text-neutral-300 select-none">|</span>}
@@ -143,8 +179,8 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
 
       {/* ----------- SUMMARY ----------- */}
       {professionalSummary && (
-        <div style={{ marginBottom: `${sectionSpacing}px` }}>
-          <h2 className="text-[12.5pt] font-bold tracking-wide border-b-[1.5px] border-neutral-800 pb-[1.5px] mb-2 text-neutral-950 text-left">
+        <div style={{ marginBottom: `${effectiveSectionSpacing}px` }}>
+          <h2 className={sectionHeadingClass}>
             Summary
           </h2>
           <p className="text-[9.5pt] text-justify text-neutral-900 font-normal">
@@ -155,8 +191,8 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
 
       {/* ----------- EDUCATION ----------- */}
       {education && education.length > 0 && (
-        <div style={{ marginBottom: `${sectionSpacing}px` }}>
-          <h2 className="text-[12.5pt] font-bold tracking-wide border-b-[1.5px] border-neutral-800 pb-[1.5px] mb-2 text-neutral-950 text-left">
+        <div style={{ marginBottom: `${effectiveSectionSpacing}px` }}>
+          <h2 className={sectionHeadingClass}>
             Education
           </h2>
           <div className="flex flex-col gap-2">
@@ -178,8 +214,8 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
 
       {/* ----------- TECHNICAL SKILLS ----------- */}
       {skills && skills.length > 0 && (
-        <div style={{ marginBottom: `${sectionSpacing}px` }}>
-          <h2 className="text-[12.5pt] font-bold tracking-wide border-b-[1.5px] border-neutral-800 pb-[1.5px] mb-2 text-neutral-950 text-left">
+        <div style={{ marginBottom: `${effectiveSectionSpacing}px` }}>
+          <h2 className={sectionHeadingClass}>
             Skills
           </h2>
           <div className="flex flex-col gap-1 text-[9.5pt] text-neutral-900">
@@ -195,11 +231,11 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
 
       {/* ----------- PROJECTS ----------- */}
       {projects && projects.length > 0 && (
-        <div style={{ marginBottom: `${sectionSpacing}px` }}>
-          <h2 className="text-[12.5pt] font-bold tracking-wide border-b-[1.5px] border-neutral-800 pb-[1.5px] mb-2 text-neutral-950 text-left">
+        <div style={{ marginBottom: `${effectiveSectionSpacing}px` }}>
+          <h2 className={sectionHeadingClass}>
             Projects
           </h2>
-          <div className="flex flex-col gap-3">
+          <div className={`flex flex-col ${projectGapClass}`}>
             {projects.map((proj) => (
               <div key={proj.id} className="text-[9.5pt]">
                 {/* Project Title and Date */}
@@ -250,7 +286,7 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
                   {proj.bullets.map((bullet, idx) => (
                     <li key={idx} className="relative pl-3.5 text-justify font-normal">
                       {/* True black circular dot */}
-                      <span className="absolute left-[3px] top-[0.45em] w-1 h-1 rounded-full bg-neutral-950 select-none" />
+                      <span className={`absolute left-[3px] top-[0.45em] w-1 h-1 rounded-full ${bulletClass} select-none`} />
                       <span>{bullet}</span>
                     </li>
                   ))}
@@ -263,8 +299,8 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
 
       {/* ----------- CERTIFICATIONS ----------- */}
       {certifications && certifications.length > 0 && (
-        <div style={{ marginBottom: `${sectionSpacing}px` }}>
-          <h2 className="text-[12.5pt] font-bold tracking-wide border-b-[1.5px] border-neutral-800 pb-[1.5px] mb-2 text-neutral-950 text-left">
+        <div style={{ marginBottom: `${effectiveSectionSpacing}px` }}>
+          <h2 className={sectionHeadingClass}>
             Certifications & Achievements
           </h2>
           <div className="flex flex-col gap-2.5">
@@ -304,7 +340,7 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
                 <ul className="flex flex-col gap-1 pl-1 text-[9.5pt] text-neutral-900 mt-1">
                   {cert.bullets.map((bullet, idx) => (
                     <li key={idx} className="relative pl-3.5 text-justify font-normal">
-                      <span className="absolute left-[3px] top-[0.45em] w-1 h-1 rounded-full bg-neutral-950 select-none" />
+                      <span className={`absolute left-[3px] top-[0.45em] w-1 h-1 rounded-full ${bulletClass} select-none`} />
                       <span>{bullet}</span>
                     </li>
                   ))}

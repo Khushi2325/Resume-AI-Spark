@@ -98,8 +98,8 @@ export const DigitalDashboard: React.FC<DigitalDashboardProps> = ({
 
   // Solver statistics tracking
   const leetcodeStats = useMemo(() => {
-    const isKhushi = data.personalInfo.name.toLowerCase().includes("khushi");
-    if (isKhushi) {
+    const isSampleProfile = data.personalInfo.name.toLowerCase().includes("aarav sharma");
+    if (isSampleProfile) {
       return {
         solved: 215,
         easy: 92,
