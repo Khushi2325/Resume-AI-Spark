@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import multer from "multer";
+// PDF parse is imported dynamically in the route
 
 dotenv.config();
 
@@ -84,6 +86,132 @@ CRITICAL TONE & CONVERSATIONAL RULES (STRICT COMPLIANCE REQUIRED):
     res.status(500).json({ 
       error: error?.message || "An error occurred while communicating with the AI Assistant." 
     });
+  }
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
+      return res.status(500).json({ error: "Gemini API key is not configured." });
+    }
+
+    const prompt = `You are an expert resume parser. I am providing you with a resume document (PDF or text).
+Your job is to read it carefully — including ALL hyperlinks, URLs, email addresses, phone numbers, GitHub links, LinkedIn profile links, LeetCode profile links, project live URLs, certificate URLs, and any other embedded links or clickable text visible in the document.
+
+Convert the entire resume strictly into a JSON object that matches exactly this TypeScript interface:
+
+export interface ResumeData {
+  personalInfo: {
+    name: string;
+    phone: string;
+    email: string;
+    github: string;       // Full URL e.g. https://github.com/username
+    linkedin: string;     // Full URL e.g. https://linkedin.com/in/username
+    leetcode: string;     // Full URL e.g. https://leetcode.com/username
+  };
+  professionalSummary: string;
+  education: {
+    id: string; // e.g. "edu-1"
+    institution: string;
+    years: string;
+    degree: string;
+    location: string;
+  }[];
+  experience: {
+    id: string; // e.g. "exp-1"
+    company: string;
+    role: string;
+    duration: string;
+    location: string;
+    bullets: string[];
+  }[];
+  skills: {
+    id: string; // e.g. "skill-1"
+    category: string;
+    skills: string[];
+  }[];
+  projects: {
+    id: string;    // e.g. "proj-1"
+    title: string;
+    year: string;
+    bullets: string[];
+    techStack: string[];
+    githubUrl?: string;  // Extract from hyperlinks or text in project section
+    liveUrl?: string;    // Extract live/demo URLs from hyperlinks or text
+  }[];
+  certifications: {
+    id: string;          // e.g. "cert-1"
+    title: string;
+    issuer: string;
+    year: string;
+    bullets: string[];
+    certificateUrl?: string; // Extract certificate verification links
+    badgeUrl?: string;       // Extract badge/credential links
+  }[];
+}
+
+IMPORTANT EXTRACTION RULES:
+1. Scan the ENTIRE document for all hyperlinks and URLs — these are CRITICAL and must not be missed.
+2. For personalInfo: extract github, linkedin, and leetcode as FULL URLs (e.g., https://github.com/username). If shown as clickable text or icons, still extract the underlying URL.
+3. For projects: look for GitHub repo links and live demo/deployment links in the project section. They may appear as text like "github.com/user/repo" or embedded hyperlinks.
+4. For certifications: extract any verification links or badge URLs.
+5. If any field is not found, use an empty string "" for strings or [] for arrays.
+6. Parse all bullet points as separate string items in the bullets array.
+7. Group skills intelligently by category if not already grouped.
+8. Extract ALL work experience entries including internships, part-time, and full-time roles.
+
+Return ONLY valid JSON matching this schema. Do NOT include markdown \`\`\`json wrappers. Just the raw JSON object.`;
+
+    // Build parts: always include the prompt text
+    // For PDFs, also pass the raw file as inline base64 so Gemini can natively
+    // read all embedded hyperlinks, URLs, and content that text-extraction misses.
+    const isPdf = req.file.mimetype === "application/pdf";
+    const parts: any[] = [];
+
+    if (isPdf) {
+      parts.push({
+        inlineData: {
+          mimeType: "application/pdf",
+          data: req.file.buffer.toString("base64"),
+        },
+      });
+    } else {
+      // For plain text / other formats, fall back to text extraction
+      const rawText = req.file.buffer.toString("utf-8");
+      parts.push({ text: `Here is the resume text content:\n\n${rawText}\n\n` });
+    }
+
+    // Always append the extraction prompt
+    parts.push({ text: prompt });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts }],
+      config: {
+        temperature: 0.1,
+      },
+    });
+
+    let jsonResponse = response.text || "";
+    // Strip markdown blocks if Gemini stubbornly includes them
+    if (jsonResponse.startsWith("\`\`\`json")) {
+      jsonResponse = jsonResponse.replace(/\`\`\`json\n?/, "").replace(/\n?\`\`\`/, "").trim();
+    } else if (jsonResponse.startsWith("\`\`\`")) {
+      jsonResponse = jsonResponse.replace(/\`\`\`\n?/, "").replace(/\n?\`\`\`/, "").trim();
+    }
+
+    const parsedJson = JSON.parse(jsonResponse);
+    res.json(parsedJson);
+  } catch (error: any) {
+    console.error("Parse Error:", error);
+    res.status(500).json({ error: error?.message || "Failed to parse resume." });
   }
 });
 
