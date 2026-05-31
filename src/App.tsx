@@ -61,6 +61,7 @@ interface UserAccount {
   email: string;
   password?: string;
   resumeData?: ResumeData;
+  is_authorized?: boolean;
 }
 
 const isValidEmailAddress = (email: string): boolean => {
@@ -197,6 +198,10 @@ export default function App() {
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
+  const [accessCodeInput, setAccessCodeInput] = useState("");
+  const [unlockCodeInput, setUnlockCodeInput] = useState("");
+  const [unlockError, setUnlockError] = useState("");
+  const [isUnlocking, setIsUnlocking] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   // -------------------------------------------------------------
@@ -235,11 +240,15 @@ export default function App() {
 
     if (!loadedResume.experience) loadedResume.experience = [];
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const isAuthorized = user?.user_metadata?.is_authorized === true;
+
     const userAccount: UserAccount = {
       id: profile.id,
       username: profile.username,
       email: profile.email || fallbackEmail || "",
       resumeData: loadedResume,
+      is_authorized: isAuthorized,
     };
 
     setCurrentUser(userAccount);
@@ -685,6 +694,17 @@ export default function App() {
         return;
       }
 
+      const correctAccessCode = import.meta.env.VITE_ACCESS_CODE || "SPARK2026";
+      const accessCodeVal = accessCodeInput.trim();
+      if (!accessCodeVal) {
+        setAuthError("Registration Access Code is required.");
+        return;
+      }
+      if (accessCodeVal !== correctAccessCode) {
+        setAuthError("Invalid Registration Access Code. Please contact the administrator.");
+        return;
+      }
+
       if (!isValidUsername(term)) {
         setAuthError("Username must be 3-24 characters and can only use letters, numbers, or underscores.");
         return;
@@ -728,6 +748,7 @@ export default function App() {
         options: {
           data: {
             username: term,
+            is_authorized: true,
           },
         },
       });
@@ -750,6 +771,7 @@ export default function App() {
       setUsernameInput("");
       setEmailInput("");
       setPasswordInput("");
+      setAccessCodeInput("");
     }
   };
 
@@ -800,6 +822,46 @@ export default function App() {
     setCurrentUser(null);
     localStorage.removeItem(SESSION_STORAGE_KEY);
     setChatOpen(false);
+  };
+
+  const handleUnlockWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUnlockError("");
+    setIsUnlocking(true);
+
+    const val = unlockCodeInput.trim();
+    if (!val) {
+      setUnlockError("Access code cannot be empty.");
+      setIsUnlocking(false);
+      return;
+    }
+
+    const correctAccessCode = import.meta.env.VITE_ACCESS_CODE || "SPARK2026";
+    if (val !== correctAccessCode) {
+      setUnlockError("Invalid registration access code. Please try again.");
+      setIsUnlocking(false);
+      return;
+    }
+
+    if (currentUser?.id && supabase) {
+      try {
+        const { error } = await supabase.auth.updateUser({
+          data: { is_authorized: true }
+        });
+        if (error) throw error;
+
+        // Update local state to reflect authorized status
+        setCurrentUser(prev => prev ? { ...prev, is_authorized: true } : null);
+        setUnlockCodeInput("");
+      } catch (err: any) {
+        setUnlockError(err.message || "Failed to update account permissions. Please check connection.");
+      }
+    } else {
+      // Local account fallback (if any)
+      setCurrentUser(prev => prev ? { ...prev, is_authorized: true } : null);
+      setUnlockCodeInput("");
+    }
+    setIsUnlocking(false);
   };
 
   // -------------------------------------------------------------
@@ -1331,22 +1393,41 @@ export default function App() {
                 </div>
 
                 {authMode === "register" && (
-                  <div className="space-y-1 text-left">
-                    <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
-                          ? "bg-zinc-955 border-zinc-800 text-neutral-100 focus:border-zinc-705"
-                          : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
-                        }`}
-                      placeholder="e.g. user@example.com"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-1 text-left">
+                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
+                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
+                            : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
+                          }`}
+                        placeholder="e.g. user@example.com"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1 text-left">
+                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
+                        Registration Access Code
+                      </label>
+                      <input
+                        type="text"
+                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
+                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
+                            : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
+                          }`}
+                        placeholder="Enter secret registration code"
+                        value={accessCodeInput}
+                        onChange={(e) => setAccessCodeInput(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="space-y-1 text-left">
@@ -2541,6 +2622,77 @@ export default function App() {
           )}
         </div>}
 
+        {currentUser && currentUser.id && !currentUser.is_authorized && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-xl z-[4000] flex items-center justify-center p-4">
+            <div className="relative w-full max-w-md">
+              <div className={`p-6 sm:p-8 rounded-3xl border shadow-2xl relative text-left ${
+                isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-sky-100 text-slate-800 shadow-[0_28px_80px_rgba(14,165,233,0.14)]"
+              }`}>
+                <div className="text-center mb-6 relative">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${
+                    isDark ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-50 text-red-650 border-red-200 shadow-2xs"
+                  }`}>
+                    <Lock size={22} className="stroke-[2.5]" />
+                  </div>
+                  <h2 className={`text-xl font-bold tracking-tight ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
+                    Verification Required
+                  </h2>
+                  <p className={`text-xs mt-1 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
+                    This workspace is restricted to authorized candidates.
+                  </p>
+                </div>
+
+                <form onSubmit={handleUnlockWorkspace} className="space-y-4">
+                  {unlockError && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-650 font-medium">
+                      ⚠️ {unlockError}
+                    </div>
+                  )}
+
+                  <div className="space-y-1 text-left">
+                    <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
+                      Registration Access Code
+                    </label>
+                    <input
+                      type="password"
+                      className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-455 ${
+                        isDark
+                          ? "bg-zinc-955 border-zinc-800 text-neutral-100 focus:border-zinc-700"
+                          : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
+                      }`}
+                      placeholder="Enter access code to unlock workspace"
+                      value={unlockCodeInput}
+                      onChange={(e) => setUnlockCodeInput(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUnlocking}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-950 font-bold text-xs py-3 rounded-xl shadow-md shadow-sky-600/15 hover:shadow-lg cursor-pointer transition-all active:scale-98 mt-2 disabled:opacity-50"
+                  >
+                    <span>{isUnlocking ? "Verifying Permissions..." : "Unlock Workspace"}</span>
+                    <ArrowRight size={14} className="stroke-[2.5]" />
+                  </button>
+                </form>
+
+                <div className="mt-6 pt-4 border-t border-sky-500/10 flex items-center justify-between text-xs">
+                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>
+                    Signed in as <strong className="font-semibold">{currentUser.email || currentUser.username}</strong>
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="text-red-500 font-extrabold hover:underline cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {showAuthModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[2000] flex items-center justify-center p-4">
             <div className="relative w-full max-w-md">
@@ -2595,22 +2747,41 @@ export default function App() {
                   </div>
 
                   {authMode === "register" && (
-                    <div className="space-y-1 text-left">
-                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-400 ${isDark
-                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
-                            : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
-                          }`}
-                        placeholder="e.g. user@example.com"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        required
-                      />
-                    </div>
+                    <>
+                      <div className="space-y-1 text-left">
+                        <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-400 ${isDark
+                              ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
+                              : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
+                            }`}
+                          placeholder="e.g. user@example.com"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-1 text-left">
+                        <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                          Registration Access Code
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-400 ${isDark
+                              ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
+                              : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
+                            }`}
+                          placeholder="Enter secret registration code"
+                          value={accessCodeInput}
+                          onChange={(e) => setAccessCodeInput(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </>
                   )}
 
                   <div className="space-y-1 text-left">
