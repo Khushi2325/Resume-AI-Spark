@@ -102,79 +102,86 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
       return res.status(500).json({ error: "Gemini API key is not configured." });
     }
 
-    const prompt = `You are an expert resume parser. I am providing you with a resume document (PDF or text).
-Your job is to read it carefully — including ALL hyperlinks, URLs, email addresses, phone numbers, GitHub links, LinkedIn profile links, LeetCode profile links, project live URLs, certificate URLs, and any other embedded links or clickable text visible in the document.
-
-Convert the entire resume strictly into a JSON object that matches exactly this TypeScript interface:
-
-export interface ResumeData {
-  personalInfo: {
-    name: string;
-    phone: string;
-    email: string;
-    github: string;       // Full URL e.g. https://github.com/username
-    linkedin: string;     // Full URL e.g. https://linkedin.com/in/username
-    leetcode: string;     // Full URL e.g. https://leetcode.com/username
-  };
-  professionalSummary: string;
-  education: {
-    id: string; // e.g. "edu-1"
-    institution: string;
-    years: string;
-    degree: string;
-    location: string;
-  }[];
-  experience: {
-    id: string; // e.g. "exp-1"
-    company: string;
-    role: string;
-    duration: string;
-    location: string;
-    bullets: string[];
-  }[];
-  skills: {
-    id: string; // e.g. "skill-1"
-    category: string;
-    skills: string[];
-  }[];
-  projects: {
-    id: string;    // e.g. "proj-1"
-    title: string;
-    year: string;
-    bullets: string[];
-    techStack: string[];
-    githubUrl?: string;  // Extract from hyperlinks or text in project section
-    liveUrl?: string;    // Extract live/demo URLs from hyperlinks or text
-  }[];
-  certifications: {
-    id: string;          // e.g. "cert-1"
-    title: string;
-    issuer: string;
-    year: string;
-    bullets: string[];
-    certificateUrl?: string; // Extract certificate verification links
-    badgeUrl?: string;       // Extract badge/credential links
-  }[];
-}
-
-IMPORTANT EXTRACTION RULES:
-1. Scan the ENTIRE document for all hyperlinks and URLs — these are CRITICAL and must not be missed.
-2. For personalInfo: extract github, linkedin, and leetcode as FULL URLs (e.g., https://github.com/username). If shown as clickable text or icons, still extract the underlying URL.
-3. For projects: look for GitHub repo links and live demo/deployment links in the project section. They may appear as text like "github.com/user/repo" or embedded hyperlinks.
-4. For certifications: extract any verification links or badge URLs.
-5. If any field is not found, use an empty string "" for strings or [] for arrays.
-6. Parse all bullet points as separate string items in the bullets array.
-7. Group skills intelligently by category if not already grouped.
-8. Extract ALL work experience entries including internships, part-time, and full-time roles.
-
-Return ONLY valid JSON matching this schema. Do NOT include markdown \`\`\`json wrappers. Just the raw JSON object.`;
-
-    // Build parts: always include the prompt text
-    // For PDFs, also pass the raw file as inline base64 so Gemini can natively
-    // read all embedded hyperlinks, URLs, and content that text-extraction misses.
     const isPdf = req.file.mimetype === "application/pdf";
-    const parts: any[] = [];
 
+    // ── Step 1: Try pdf-parse to extract raw text for URL pre-scanning ────────
+    let rawText = "";
+    if (isPdf) {
+      try {
+        const pdfMod = await import("pdf-parse");
+        const pdfFn: any = pdfMod.default ?? pdfMod;
+        if (typeof pdfFn === "function") {
+          const data = await pdfFn(req.file.buffer);
+          rawText = data?.text ?? "";
+        }
+      } catch { rawText = ""; }
+    } else {
+      rawText = req.file.buffer.toString("utf-8");
+    }
+
+    // ── Step 2: Regex pre-scan to find ALL known URL patterns ─────────────────
+    // This guarantees we catch links even if Gemini misses them visually.
+    const urlRe = /(?:https?:\/\/)?(?:www\.)?(?:[-a-zA-Z0-9@:%._+~#=]{1,256})\.(?:[a-zA-Z]{2,10})(?:\/[-a-zA-Z0-9()@:%_+.~#?&/=]*)?/g;
+    const knownDomains = [
+      "github.com", "linkedin.com", "leetcode.com",
+      "vercel.app", "netlify.app", "railway.app", "render.com",
+      "herokuapp.com", "drive.google.com", "credly.com",
+      "coursera.org", "udemy.com", "hackerrank.com",
+    ];
+    const scannedUrls = [...new Set(
+      (rawText.match(urlRe) ?? []).filter(u => knownDomains.some(d => u.includes(d)))
+    )];
+
+    const urlHint = scannedUrls.length > 0
+      ? `\n\n===PRE-SCANNED URLS FOUND IN DOCUMENT===\nI pre-scanned the document text and found these URLs. You MUST use these in the correct fields:\n${scannedUrls.map(u => `  - ${u}`).join("\n")}\n\nMapping guide:\n- github.com/username (no repo path) → personalInfo.github\n- linkedin.com/in/... → personalInfo.linkedin\n- leetcode.com/... → personalInfo.leetcode\n- github.com/user/repo-name → projects[matching project].githubUrl\n- vercel.app / netlify.app / live sites → projects[matching project].liveUrl\n- coursera / udemy / credly → certifications[matching cert].certificateUrl\n===END PRE-SCANNED URLS===`
+      : "";
+
+    // ── Step 3: Build the comprehensive extraction prompt ─────────────────────
+    const systemInstruction = `You are a world-class resume parser AI. Your ONLY job is to extract information from the resume document provided and return it as structured JSON.
+
+EXTRACTION MANDATE — follow every point without exception:
+
+PERSONAL INFO:
+• name: Full name of the person
+• phone: Phone number with country code
+• email: Email address
+• github: Full GitHub profile URL (e.g. https://github.com/username). Look for github.com links in the header, contact section, footer, or anywhere. If you see "github.com/xyz" add https:// prefix.
+• linkedin: Full LinkedIn profile URL (e.g. https://linkedin.com/in/username). Look for linkedin.com links anywhere in the document.
+• leetcode: Full LeetCode profile URL (e.g. https://leetcode.com/username). Look for leetcode.com links anywhere.
+
+EDUCATION: Extract ALL education entries (university, school, certifications from academic institutions).
+
+EXPERIENCE: Extract ALL work experience — internships, part-time jobs, full-time jobs, freelance work. Do NOT skip any.
+
+SKILLS: Group all technical skills by category. Common categories: Languages, Backend, Frontend, Tools, Databases, Cloud, Core/CS Fundamentals.
+
+PROJECTS: For each project:
+• title: Project name
+• year: Year or date range
+• bullets: Each bullet point as a separate string
+• techStack: Technologies used, extracted from "Stack:" or "Tech:" labels or bullet content
+• githubUrl: The GitHub repository URL specifically for THIS project (e.g. github.com/user/project-name). Each project may have its own GitHub link.
+• liveUrl: The live/deployed URL for THIS project (vercel.app, netlify.app, any custom domain shown)
+
+CERTIFICATIONS: For each certification:
+• title: Certificate/course name
+• issuer: Platform or organization (Coursera, CodeChef, ServiceNow, etc.)
+• year: Year earned
+• bullets: Any description bullet points
+• certificateUrl: The verification/credential link if present
+• badgeUrl: Any badge URL
+
+RULES:
+1. Every URL must start with https://. If missing, add it.
+2. Empty fields → use "" for strings and [] for arrays.
+3. IDs must follow pattern: edu-1, exp-1, skill-1, proj-1, cert-1 (increment for each).
+4. Extract bullet points as individual array items, NOT as one long string.
+5. Tech stack in projects must be an array of individual technology names.${urlHint}`;
+
+    const prompt = `Parse this resume completely and extract ALL information including every URL, link, project, experience entry, skill, and certification. Return structured JSON only.`;
+
+    // ── Step 4: Build Gemini content parts ───────────────────────────────────
+    const parts: any[] = [];
     if (isPdf) {
       parts.push({
         inlineData: {
@@ -183,37 +190,154 @@ Return ONLY valid JSON matching this schema. Do NOT include markdown \`\`\`json 
         },
       });
     } else {
-      // For plain text / other formats, fall back to text extraction
-      const rawText = req.file.buffer.toString("utf-8");
-      parts.push({ text: `Here is the resume text content:\n\n${rawText}\n\n` });
+      parts.push({ text: `RESUME CONTENT:\n\n${rawText}` });
     }
-
-    // Always append the extraction prompt
     parts.push({ text: prompt });
 
+    // ── Step 5: Call Gemini with structured JSON output mode ──────────────────
+    // responseSchema forces Gemini to output perfectly valid JSON every time.
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [{ role: "user", parts }],
       config: {
+        systemInstruction,
         temperature: 0.1,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object" as any,
+          properties: {
+            personalInfo: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                phone: { type: "string" },
+                email: { type: "string" },
+                github: { type: "string" },
+                linkedin: { type: "string" },
+                leetcode: { type: "string" },
+              },
+              required: ["name", "phone", "email", "github", "linkedin", "leetcode"],
+            },
+            professionalSummary: { type: "string" },
+            education: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  institution: { type: "string" },
+                  years: { type: "string" },
+                  degree: { type: "string" },
+                  location: { type: "string" },
+                },
+                required: ["id", "institution", "years", "degree", "location"],
+              },
+            },
+            experience: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  company: { type: "string" },
+                  role: { type: "string" },
+                  duration: { type: "string" },
+                  location: { type: "string" },
+                  bullets: { type: "array", items: { type: "string" } },
+                },
+                required: ["id", "company", "role", "duration", "location", "bullets"],
+              },
+            },
+            skills: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  category: { type: "string" },
+                  skills: { type: "array", items: { type: "string" } },
+                },
+                required: ["id", "category", "skills"],
+              },
+            },
+            projects: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  title: { type: "string" },
+                  year: { type: "string" },
+                  bullets: { type: "array", items: { type: "string" } },
+                  techStack: { type: "array", items: { type: "string" } },
+                  githubUrl: { type: "string" },
+                  liveUrl: { type: "string" },
+                },
+                required: ["id", "title", "year", "bullets", "techStack"],
+              },
+            },
+            certifications: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  title: { type: "string" },
+                  issuer: { type: "string" },
+                  year: { type: "string" },
+                  bullets: { type: "array", items: { type: "string" } },
+                  certificateUrl: { type: "string" },
+                  badgeUrl: { type: "string" },
+                },
+                required: ["id", "title", "issuer", "year", "bullets"],
+              },
+            },
+          },
+          required: ["personalInfo", "professionalSummary", "education", "experience", "skills", "projects", "certifications"],
+        },
       },
     });
 
-    let jsonResponse = response.text || "";
-    // Strip markdown blocks if Gemini stubbornly includes them
-    if (jsonResponse.startsWith("\`\`\`json")) {
-      jsonResponse = jsonResponse.replace(/\`\`\`json\n?/, "").replace(/\n?\`\`\`/, "").trim();
-    } else if (jsonResponse.startsWith("\`\`\`")) {
-      jsonResponse = jsonResponse.replace(/\`\`\`\n?/, "").replace(/\n?\`\`\`/, "").trim();
+    // ── Step 6: Parse response — responseSchema guarantees valid JSON ─────────
+    const parsedJson = JSON.parse(response.text ?? "{}");
+
+    // ── Step 7: Post-process — ensure https:// on all URL fields ─────────────
+    const ensureHttps = (url: string): string => {
+      if (!url || url.trim() === "") return "";
+      const u = url.trim();
+      if (u.startsWith("http://") || u.startsWith("https://")) return u;
+      return `https://${u}`;
+    };
+
+    if (parsedJson.personalInfo) {
+      parsedJson.personalInfo.github   = ensureHttps(parsedJson.personalInfo.github ?? "");
+      parsedJson.personalInfo.linkedin = ensureHttps(parsedJson.personalInfo.linkedin ?? "");
+      parsedJson.personalInfo.leetcode = ensureHttps(parsedJson.personalInfo.leetcode ?? "");
     }
 
-    const parsedJson = JSON.parse(jsonResponse);
+    if (Array.isArray(parsedJson.projects)) {
+      parsedJson.projects = parsedJson.projects.map((p: any) => ({
+        ...p,
+        githubUrl: ensureHttps(p.githubUrl ?? ""),
+        liveUrl:   ensureHttps(p.liveUrl   ?? ""),
+      }));
+    }
+
+    if (Array.isArray(parsedJson.certifications)) {
+      parsedJson.certifications = parsedJson.certifications.map((c: any) => ({
+        ...c,
+        certificateUrl: ensureHttps(c.certificateUrl ?? ""),
+        badgeUrl:       ensureHttps(c.badgeUrl       ?? ""),
+      }));
+    }
+
     res.json(parsedJson);
   } catch (error: any) {
-    console.error("Parse Error:", error);
-    res.status(500).json({ error: error?.message || "Failed to parse resume." });
+    console.error("Parse Resume Error:", error);
+    res.status(500).json({ error: error?.message ?? "Failed to parse resume." });
   }
 });
+
 
 // Setup self-ping to prevent Render from putting the free tier to sleep (10 min interval)
 app.get("/api/ping", (req, res) => {
