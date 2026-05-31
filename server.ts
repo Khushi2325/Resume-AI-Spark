@@ -92,57 +92,55 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
 
     const isPdf = req.file.mimetype === "application/pdf";
 
-    // ── 1. Extract plain text via pdf-parse (for text URL scanning) ───────────
+    // ── 1. Extract text AND link annotations via new PDFParse class ───────────
     let rawText = "";
+    const annotationUrls: string[] = [];
+
     if (isPdf) {
       try {
-        const pdfMod = await import("pdf-parse");
-        const pdfFn: any = pdfMod.default ?? pdfMod;
-        if (typeof pdfFn === "function") {
-          const data = await pdfFn(req.file.buffer);
-          rawText = data?.text ?? "";
+        const { PDFParse } = await import("pdf-parse");
+        const parser = new PDFParse({ data: req.file.buffer });
+
+        // Extract plain text with hyperlinks embedded in markdown style
+        const textResult = await parser.getText({ parseHyperlinks: true });
+        rawText = textResult.text ?? "";
+
+        // Extract link annotations from the PDF structure
+        const info = await parser.getInfo({ parsePageInfo: true });
+        for (const page of info.pages ?? []) {
+          for (const linkObj of page.links ?? []) {
+            if (linkObj.url) {
+              const cleanedUrl = linkObj.url.trim();
+              if (cleanedUrl.toLowerCase().startsWith("mailto:")) {
+                continue;
+              }
+              annotationUrls.push(cleanedUrl);
+            }
+          }
         }
-      } catch { rawText = ""; }
+        await parser.destroy();
+      } catch (e: any) {
+        console.error("[ResumeParser] PDFParse error:", e);
+        rawText = "";
+      }
     } else {
       rawText = req.file.buffer.toString("utf-8");
     }
 
-    // ── 2. Extract hyperlinks from PDF ANNOTATION LAYER ───────────────────────
-    // PDFs store ALL clickable hyperlinks (even icon-based ones like GitHub/LinkedIn icons)
-    // as /URI entries in the binary PDF structure. We extract them directly here.
-    const annotationUrls: string[] = [];
-    if (isPdf) {
+    // ── 2. Also scan the raw PDF binary (catches uncompressed PDFs) ───────────
+    if (isPdf && annotationUrls.length === 0) {
       try {
-        const pdfRaw = req.file.buffer.toString("latin1"); // binary-safe encoding
-
-        // Pattern 1: /URI (url) — standard ASCII link annotation
+        const pdfRaw = req.file.buffer.toString("latin1");
+        // /URI (url) — standard
         const p1 = /\/URI\s*\(([^)]+)\)/g;
         let m: RegExpExecArray | null;
         while ((m = p1.exec(pdfRaw)) !== null) {
           const u = m[1].replace(/\\\)/g, ")").trim();
           if (u.length > 5) annotationUrls.push(u);
         }
-
-        // Pattern 2: /URI <hex> — hex-encoded URI
-        const p2 = /\/URI\s*<([0-9a-fA-F\s]+)>/g;
-        while ((m = p2.exec(pdfRaw)) !== null) {
-          const hex = m[1].replace(/\s/g, "");
-          let decoded = "";
-          for (let i = 0; i < hex.length - 1; i += 2) {
-            decoded += String.fromCharCode(parseInt(hex.substring(i, i + 2), 16));
-          }
-          decoded = decoded.trim();
-          if (decoded.startsWith("http") || decoded.includes("github") || decoded.includes("linkedin")) {
-            annotationUrls.push(decoded);
-          }
-        }
-
-        // Pattern 3: Broad scan — find ANY http(s) URL anywhere in the PDF binary
-        // This catches URLs stored in any PDF structure (action dicts, GoToR, etc.)
+        // Broad http(s) URL scan
         const broadUrlRe = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-zA-Z]{2,10}(?:[-a-zA-Z0-9()@:%_+.~#?&/=]*)/g;
-        const broadMatches = pdfRaw.match(broadUrlRe) ?? [];
-        for (const u of broadMatches) {
-          // Only keep URLs with known domains we care about
+        for (const u of (pdfRaw.match(broadUrlRe) ?? [])) {
           const lo = u.toLowerCase();
           if (lo.includes("github") || lo.includes("linkedin") || lo.includes("leetcode") ||
               lo.includes("vercel") || lo.includes("netlify") || lo.includes("railway") ||
@@ -151,18 +149,16 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
             annotationUrls.push(u);
           }
         }
-
-        // Pattern 4: Look for github.com/user or linkedin.com/in/user even without https://
-        const p4a = /github\.com\/[a-zA-Z0-9_-]{2,39}(?:\/[a-zA-Z0-9_.-]+)?/g;
-        const p4b = /linkedin\.com\/in\/[a-zA-Z0-9_-]{2,100}/g;
-        const p4c = /leetcode\.com\/(?:u\/)?[a-zA-Z0-9_-]{2,50}/g;
-        for (const re of [p4a, p4b, p4c]) {
-          let p4m: RegExpExecArray | null;
-          while ((p4m = re.exec(pdfRaw)) !== null) {
-            annotationUrls.push(`https://${p4m[0]}`);
-          }
+        // No-https patterns
+        for (const re of [
+          /github\.com\/[a-zA-Z0-9_-]{2,39}(?:\/[a-zA-Z0-9_.-]+)?/g,
+          /linkedin\.com\/in\/[a-zA-Z0-9_-]{2,100}/g,
+          /leetcode\.com\/(?:u\/)?[a-zA-Z0-9_-]{2,50}/g,
+        ]) {
+          let pm: RegExpExecArray | null;
+          while ((pm = re.exec(pdfRaw)) !== null) annotationUrls.push(`https://${pm[0]}`);
         }
-      } catch { /* silent fail — Gemini will still read the PDF visually */ }
+      } catch { /* silent */ }
     }
 
     // ── 3. Text-level URL regex scan ──────────────────────────────────────────
