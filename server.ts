@@ -115,7 +115,7 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
       try {
         const pdfRaw = req.file.buffer.toString("latin1"); // binary-safe encoding
 
-        // Standard /URI (url) pattern
+        // Pattern 1: /URI (url) — standard ASCII link annotation
         const p1 = /\/URI\s*\(([^)]+)\)/g;
         let m: RegExpExecArray | null;
         while ((m = p1.exec(pdfRaw)) !== null) {
@@ -123,7 +123,7 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
           if (u.length > 5) annotationUrls.push(u);
         }
 
-        // Hex-encoded /URI <hex> pattern
+        // Pattern 2: /URI <hex> — hex-encoded URI
         const p2 = /\/URI\s*<([0-9a-fA-F\s]+)>/g;
         while ((m = p2.exec(pdfRaw)) !== null) {
           const hex = m[1].replace(/\s/g, "");
@@ -134,6 +134,32 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
           decoded = decoded.trim();
           if (decoded.startsWith("http") || decoded.includes("github") || decoded.includes("linkedin")) {
             annotationUrls.push(decoded);
+          }
+        }
+
+        // Pattern 3: Broad scan — find ANY http(s) URL anywhere in the PDF binary
+        // This catches URLs stored in any PDF structure (action dicts, GoToR, etc.)
+        const broadUrlRe = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-zA-Z]{2,10}(?:[-a-zA-Z0-9()@:%_+.~#?&/=]*)/g;
+        const broadMatches = pdfRaw.match(broadUrlRe) ?? [];
+        for (const u of broadMatches) {
+          // Only keep URLs with known domains we care about
+          const lo = u.toLowerCase();
+          if (lo.includes("github") || lo.includes("linkedin") || lo.includes("leetcode") ||
+              lo.includes("vercel") || lo.includes("netlify") || lo.includes("railway") ||
+              lo.includes("render") || lo.includes("heroku") || lo.includes("credly") ||
+              lo.includes("coursera") || lo.includes("udemy") || lo.includes("hackerrank")) {
+            annotationUrls.push(u);
+          }
+        }
+
+        // Pattern 4: Look for github.com/user or linkedin.com/in/user even without https://
+        const p4a = /github\.com\/[a-zA-Z0-9_-]{2,39}(?:\/[a-zA-Z0-9_.-]+)?/g;
+        const p4b = /linkedin\.com\/in\/[a-zA-Z0-9_-]{2,100}/g;
+        const p4c = /leetcode\.com\/(?:u\/)?[a-zA-Z0-9_-]{2,50}/g;
+        for (const re of [p4a, p4b, p4c]) {
+          let p4m: RegExpExecArray | null;
+          while ((p4m = re.exec(pdfRaw)) !== null) {
+            annotationUrls.push(`https://${p4m[0]}`);
           }
         }
       } catch { /* silent fail — Gemini will still read the PDF visually */ }
