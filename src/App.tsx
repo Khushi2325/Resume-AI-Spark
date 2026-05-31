@@ -19,6 +19,7 @@ import {
   Printer,
   Download,
   Upload,
+  FileUp,
   RefreshCw,
   Sparkles,
   Github,
@@ -111,7 +112,11 @@ export default function App() {
     const saved = localStorage.getItem(SESSION_STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved) as UserAccount;
+        const user = JSON.parse(saved) as UserAccount;
+        if (user.resumeData && !user.resumeData.experience) {
+          user.resumeData.experience = [];
+        }
+        return user;
       } catch (e) {
         console.error("Failed to parse current user:", e);
       }
@@ -161,6 +166,7 @@ export default function App() {
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   // -------------------------------------------------------------
   // B. WORKSPACE DATA & STYLING STATES
@@ -195,6 +201,8 @@ export default function App() {
     const loadedResume = resumeRow?.resume_data && Object.keys(resumeRow.resume_data).length > 0
       ? resumeRow.resume_data as ResumeData
       : initialResumeData;
+
+    if (!loadedResume.experience) loadedResume.experience = [];
 
     const userAccount: UserAccount = {
       id: profile.id,
@@ -248,7 +256,9 @@ export default function App() {
         if (isDemo) {
           setResumeData(initialResumeData);
         } else {
-          setResumeData(acc.resumeData);
+          const loadedData = { ...acc.resumeData };
+          if (!loadedData.experience) loadedData.experience = [];
+          setResumeData(loadedData);
         }
       } else {
         const isDemo = currentUser.username.toLowerCase() === "demo";
@@ -497,7 +507,7 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  const handleJsonImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (currentUser?.username.toLowerCase() === "demo" && !currentUser.id) {
       alert("Demo profile is view-only. Please register or sign in to edit and import resumes.");
       return;
@@ -506,21 +516,69 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const json = JSON.parse(event.target?.result as string) as ResumeData;
-        if (json.personalInfo && json.education && json.skills && json.projects) {
-          saveUserResume(json);
-          alert("Resume details loaded successfully into your profile!");
-        } else {
-          alert("Invalid file structure. Make sure this is a valid interactive resume JSON file.");
+    if (file.type === "application/json" || file.name.endsWith(".json")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const json = JSON.parse(event.target?.result as string) as ResumeData;
+          if (json.personalInfo && json.education && json.skills && json.projects) {
+            // Ensure experience exists in legacy json
+            if (!json.experience) json.experience = [];
+            saveUserResume(json);
+            alert("Resume details loaded successfully into your profile!");
+          } else {
+            alert("Invalid file structure. Make sure this is a valid interactive resume JSON file.");
+          }
+        } catch (err) {
+          alert("Failed to read JSON backup file.");
         }
-      } catch (err) {
-        alert("Failed to read JSON backup file.");
+      };
+      reader.readAsText(file);
+    } else if (file.type === "application/pdf" || file.name.endsWith(".pdf") || file.type.includes("text")) {
+      setIsImporting(true);
+      try {
+        const formData = new FormData();
+        formData.append("resume", file);
+        
+        const response = await fetch("/api/parse-resume", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorMessage = "Failed to parse PDF";
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.error) errorMessage = errorData.error;
+          } catch (e) {
+            errorMessage = errorText || `Server responded with status ${response.status}`;
+          }
+          throw new Error(errorMessage);
+        }
+
+        const responseText = await response.text();
+        let json: ResumeData;
+        try {
+          json = JSON.parse(responseText) as ResumeData;
+        } catch (e) {
+          throw new Error("Invalid JSON received from server");
+        }
+
+        if (json.personalInfo) {
+          if (!json.experience) json.experience = [];
+          saveUserResume(json);
+          alert("Resume AI parsing complete! Your details have been imported.");
+        }
+      } catch (err: any) {
+        alert("Error parsing resume: " + err.message);
+      } finally {
+        setIsImporting(false);
       }
-    };
-    reader.readAsText(file);
+    } else {
+      alert("Please upload a PDF or JSON file.");
+    }
+    
     if (e.target) e.target.value = "";
   };
 
@@ -601,16 +659,8 @@ export default function App() {
         return;
       }
 
-      const emailVal = emailInput.trim().toLowerCase();
-      if (!emailVal) {
-        setAuthError("A valid email address is required.");
-        return;
-      }
-
-      if (!isValidEmailAddress(emailVal)) {
-        setAuthError("Please enter a valid email address.");
-        return;
-      }
+      // Automatically generate an internal dummy email so Supabase works without the user typing one
+      const emailVal = `${term.toLowerCase()}@resume-ai-spark.local`;
 
       const { data: existingUsername, error: usernameLookupError } = await supabase
         .from("profiles")
@@ -625,22 +675,6 @@ export default function App() {
 
       if (existingUsername) {
         setAuthError("An account with this username already exists.");
-        return;
-      }
-
-      const { data: existingEmail, error: emailLookupError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", emailVal)
-        .maybeSingle();
-
-      if (emailLookupError) {
-        setAuthError("Could not validate that email. Please check your Supabase schema.");
-        return;
-      }
-
-      if (existingEmail) {
-        setAuthError("An account with this email already exists.");
         return;
       }
 
@@ -1612,16 +1646,28 @@ export default function App() {
                     className={buttonImportExportClass}
                     title="Import backup JSON metadata folder"
                   >
-                    <Upload size={13} />
-                    Import
+                    <span className="truncate flex items-center gap-1.5">
+                      {isImporting ? (
+                        <>
+                          <RefreshCw size={12} className="animate-spin text-sky-500" />
+                          AI is reading your resume...
+                        </>
+                      ) : (
+                        <>
+                          <FileUp size={12} className={isDark ? "text-indigo-400" : "text-sky-600"} />
+                          Smart PDF Import
+                        </>
+                      )}
+                    </span>
                   </button>
                 )}
                 <input
                   type="file"
                   ref={fileInputRef}
-                  onChange={handleJsonImport}
-                  accept=".json"
+                  accept="application/json,.json,application/pdf,.pdf"
                   className="hidden"
+                  disabled={isImporting}
+                  onChange={handleFileUpload}
                 />
 
                 {/* AI Assistant Activator button */}
@@ -2430,7 +2476,7 @@ export default function App() {
 
                   <div className="space-y-1 text-left">
                     <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
-                      {authMode === "login" ? "Username or Email" : "Username"}
+                      Username
                     </label>
                     <input
                       type="text"
@@ -2438,31 +2484,14 @@ export default function App() {
                           ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
                           : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
                         }`}
-                      placeholder={authMode === "login" ? "e.g. khushi or khushi@example.com" : "e.g. khushi"}
+                      placeholder="e.g. khushi"
                       value={usernameInput}
                       onChange={(e) => setUsernameInput(e.target.value)}
                       required
                     />
                   </div>
 
-                  {authMode === "register" && (
-                    <div className="space-y-1 text-left">
-                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-455 ${isDark
-                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
-                            : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
-                          }`}
-                        placeholder="e.g. user@example.com"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        required
-                      />
-                    </div>
-                  )}
+
 
                   <div className="space-y-1 text-left">
                     <div className="flex justify-between items-center">

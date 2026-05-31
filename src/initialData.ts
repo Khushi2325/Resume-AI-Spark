@@ -27,6 +27,20 @@ export const initialResumeData: ResumeData = {
       location: "Maharashtra",
     },
   ],
+  experience: [
+    {
+      id: "exp-1",
+      company: "TechNova Solutions",
+      role: "Backend Developer Intern",
+      duration: "Jun 2024 -- Aug 2024",
+      location: "Pune, India (Remote)",
+      bullets: [
+        "Optimized database queries in Node.js, reducing API response times by 25%.",
+        "Assisted in migrating legacy REST APIs to GraphQL, improving data fetching efficiency for the frontend client.",
+        "Collaborated with the QA team to increase unit test coverage from 60% to 85% using Jest."
+      ]
+    }
+  ],
   skills: [
     {
       id: "skill-1",
@@ -147,6 +161,16 @@ export const blankResumeData: ResumeData = {
       years: "",
       degree: "",
       location: "",
+    }
+  ],
+  experience: [
+    {
+      id: "exp-blank-1",
+      company: "",
+      role: "",
+      duration: "",
+      location: "",
+      bullets: [""],
     }
   ],
   skills: [

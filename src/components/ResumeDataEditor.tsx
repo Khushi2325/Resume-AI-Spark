@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ResumeData, EducationEntry, SkillGroup, ProjectEntry, CertificationEntry } from "../types";
+import { ResumeData, EducationEntry, ExperienceEntry, SkillGroup, ProjectEntry, CertificationEntry } from "../types";
 
 interface CommaSeparatedInputFieldProps {
   initialValue: string[];
@@ -52,6 +52,7 @@ import {
   Wrench,
   Layers,
   Award,
+  Briefcase,
   RefreshCw,
   Plus,
   Trash2,
@@ -174,6 +175,62 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
   const removeEdu = (id: string) => {
     updateData((draft) => {
       draft.education = draft.education.filter((item) => item.id !== id);
+    });
+  };
+
+  // Experience Helpers
+  const handleExpChange = (id: string, field: keyof ExperienceEntry, value: string) => {
+    updateData((draft) => {
+      const idx = draft.experience.findIndex((item) => item.id === id);
+      if (idx !== -1) {
+        (draft.experience[idx] as any)[field] = value;
+      }
+    });
+  };
+
+  const handleExpBulletChange = (expId: string, bIdx: number, val: string) => {
+    updateData((draft) => {
+      const eIdx = draft.experience.findIndex((e) => e.id === expId);
+      if (eIdx !== -1) {
+        draft.experience[eIdx].bullets[bIdx] = val;
+      }
+    });
+  };
+
+  const addExpBullet = (expId: string) => {
+    updateData((draft) => {
+      const eIdx = draft.experience.findIndex((e) => e.id === expId);
+      if (eIdx !== -1) {
+        draft.experience[eIdx].bullets.push("New impact-focused bullet point.");
+      }
+    });
+  };
+
+  const removeExpBullet = (expId: string, bIdx: number) => {
+    updateData((draft) => {
+      const eIdx = draft.experience.findIndex((e) => e.id === expId);
+      if (eIdx !== -1) {
+        draft.experience[eIdx].bullets.splice(bIdx, 1);
+      }
+    });
+  };
+
+  const addExp = () => {
+    updateData((draft) => {
+      draft.experience.push({
+        id: `exp-${Date.now()}`,
+        company: "Company Name",
+        role: "Job Title",
+        duration: "Start Date - End Date",
+        location: "City, Country",
+        bullets: ["Describe your impact and achievements here."],
+      });
+    });
+  };
+
+  const removeExp = (id: string) => {
+    updateData((draft) => {
+      draft.experience = draft.experience.filter((item) => item.id !== id);
     });
   };
 
@@ -333,6 +390,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
   const tabs = [
     { id: "personal", label: "Contact Info", icon: User },
     { id: "summary", label: "Professional Summary", icon: FileText },
+    { id: "experience", label: "Experience", icon: Briefcase },
     { id: "education", label: "Education", icon: GraduationCap },
     { id: "skills", label: "Skills", icon: Wrench },
     { id: "projects", label: "Projects", icon: Layers },
@@ -457,6 +515,121 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
               <p className="text-xs text-slate-500 mt-1">
                 Tip: Standard ATS-friendly formats favor action-oriented summaries focusing heavily on core technologies (Node, Java, systems).
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* EXPERIENCE VIEW */}
+        {activeTab === "experience" && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className={sectionHeadingClass}>
+                <Briefcase size={15} /> Work Experience
+              </h3>
+              <button
+                onClick={addExp}
+                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-indigo-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
+              >
+                <Plus size={13} />
+                Add Role
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {data.experience?.map((exp, index) => (
+                <div key={exp.id} className={recordCardProjClass}>
+                  <button
+                    onClick={() => removeExp(exp.id)}
+                    className="absolute top-4 right-4 text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
+                    title="Delete Role"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+
+                  <div className="text-xs font-bold text-sky-450 mb-2">
+                    Role #{index + 1}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelNestedClass}>Company</label>
+                      <input
+                        type="text"
+                        value={exp.company}
+                        onChange={(e) => handleExpChange(exp.id, "company", e.target.value)}
+                        className={inputNestedClass}
+                        placeholder="e.g. Google"
+                      />
+                    </div>
+                    <div>
+                      <label className={labelNestedClass}>Job Title</label>
+                      <input
+                        type="text"
+                        value={exp.role}
+                        onChange={(e) => handleExpChange(exp.id, "role", e.target.value)}
+                        className={inputNestedClass}
+                        placeholder="e.g. Software Engineer"
+                      />
+                    </div>
+                    <div>
+                      <label className={labelNestedClass}>Duration</label>
+                      <input
+                        type="text"
+                        value={exp.duration}
+                        onChange={(e) => handleExpChange(exp.id, "duration", e.target.value)}
+                        className={inputNestedClass}
+                        placeholder="e.g. Jun 2021 - Present"
+                      />
+                    </div>
+                    <div>
+                      <label className={labelNestedClass}>Location</label>
+                      <input
+                        type="text"
+                        value={exp.location}
+                        onChange={(e) => handleExpChange(exp.id, "location", e.target.value)}
+                        className={inputNestedClass}
+                        placeholder="e.g. Mountain View, CA"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <label className={labelNestedClass}>Key Achievements & Responsibilities</label>
+                    <div className="space-y-2 mt-2">
+                      {exp.bullets.map((b, bIdx) => (
+                        <div key={bIdx} className="flex items-start gap-2">
+                          <textarea
+                            rows={2}
+                            value={b}
+                            onChange={(e) => handleExpBulletChange(exp.id, bIdx, e.target.value)}
+                            className={inputNestedClass}
+                            style={{ resize: "vertical" }}
+                          />
+                          <button
+                            onClick={() => removeExpBullet(exp.id, bIdx)}
+                            className="text-slate-400 hover:text-rose-400 mt-2 transition-colors cursor-pointer"
+                            title="Remove bullet"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => addExpBullet(exp.id)}
+                        className="text-xs font-bold text-sky-500 hover:text-sky-400 flex items-center gap-1 mt-1 transition-colors cursor-pointer"
+                      >
+                        <Plus size={11} />
+                        Add Bullet Point
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!data.experience || data.experience.length === 0) && (
+                <div className="text-center py-6 text-xs text-slate-500">
+                  No work experience added yet. Click "Add Role" to get started!
+                </div>
+              )}
             </div>
           </div>
         )}

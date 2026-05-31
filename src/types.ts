@@ -15,6 +15,15 @@ export interface EducationEntry {
   location: string;
 }
 
+export interface ExperienceEntry {
+  id: string;
+  company: string;
+  role: string;
+  duration: string;
+  location: string;
+  bullets: string[];
+}
+
 export interface SkillGroup {
   id: string;
   category: string;
@@ -45,6 +54,7 @@ export interface ResumeData {
   personalInfo: PersonalInfo;
   professionalSummary: string;
   education: EducationEntry[];
+  experience: ExperienceEntry[];
   skills: SkillGroup[];
   projects: ProjectEntry[];
   certifications: CertificationEntry[];

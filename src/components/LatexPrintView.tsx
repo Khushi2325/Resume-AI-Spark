@@ -63,7 +63,7 @@ function ContactLine({ data, showIcons, separator = " | ", className = "" }: {
    Matches original LaTeX-style academic resume exactly.
 ══════════════════════════════════════════════════════════════════ */
 function ClassicScholar({ data, fs, lh, mar, sp, font, icons }: any) {
-  const { personalInfo: pi, professionalSummary, education, skills, projects, certifications } = data;
+  const { personalInfo: pi, professionalSummary, experience, education, skills, projects, certifications } = data;
   /* Section heading: pure black, dark underline rule — no color accent */
   const sec = (title: string) => (
     <h2 style={{ fontSize: `${fs + 1.5}pt`, borderBottom: "1.5px solid #111827", color: "#111827", paddingBottom: "1.5px", marginBottom: `${sp * 0.55}px`, fontWeight: 700, letterSpacing: "0.025em", fontFamily: "inherit" }}>
@@ -86,6 +86,32 @@ function ClassicScholar({ data, fs, lh, mar, sp, font, icons }: any) {
         <div style={{ marginBottom: `${sp}px` }}>
           {sec("Summary")}
           <p style={{ color: "#1c1c1c", textAlign: "justify", margin: 0, fontSize: `${fs - 0.5}pt` }}>{professionalSummary}</p>
+        </div>
+      )}
+
+      {/* ── EXPERIENCE ── */}
+      {experience?.length > 0 && (
+        <div style={{ marginBottom: `${sp}px` }}>
+          {sec("Experience")}
+          <div style={{ display: "flex", flexDirection: "column", gap: `${sp * 0.65}px` }}>
+            {experience.map((ex: any) => (
+              <div key={ex.id} style={{ fontSize: `${fs - 0.5}pt` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontWeight: 700, color: "#0d1117" }}>
+                  <span style={{ fontSize: `${fs}pt` }}>{ex.company}</span>
+                  <span style={{ fontWeight: 400, fontStyle: "italic", color: "#555" }}>{ex.duration}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", color: "#333", fontStyle: "italic", marginTop: "1px", marginBottom: "2px" }}>
+                  <span style={{ fontWeight: 500 }}>{ex.role}</span>
+                  <span style={{ color: "#555", fontWeight: 500 }}>{ex.location}</span>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: "1.2em", color: "#1c1c1c" }}>
+                  {ex.bullets.map((b: string, i: number) => (
+                    <li key={i} style={{ paddingLeft: "4px", marginBottom: "3px", lineHeight: lh }}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -216,7 +242,7 @@ function ClassicScholar({ data, fs, lh, mar, sp, font, icons }: any) {
    Wide right main with summary, projects, certs
 ══════════════════════════════════════════════════════════════════ */
 function TwoColumnPro({ data, fs, lh, mar, sp, font, icons }: any) {
-  const { personalInfo: pi, professionalSummary, education, skills, projects, certifications } = data;
+  const { personalInfo: pi, professionalSummary, experience, education, skills, projects, certifications } = data;
 
   const sidebarSec = (title: string) => (
     <div style={{ fontSize: `${fs - 0.5}pt`, fontWeight: 800, color: "#1e3a8a", letterSpacing: "0.08em", textTransform: "uppercase", borderBottom: "1px solid #c7d2fe", paddingBottom: "2px", marginBottom: "5px", marginTop: `${sp * 0.8}px` }}>
@@ -326,7 +352,7 @@ function TwoColumnPro({ data, fs, lh, mar, sp, font, icons }: any) {
    Skills shown as inline pills under a colored bar
 ══════════════════════════════════════════════════════════════════ */
 function BoldBanner({ data, fs, lh, mar, sp, font, icons }: any) {
-  const { personalInfo: pi, professionalSummary, education, skills, projects, certifications } = data;
+  const { personalInfo: pi, professionalSummary, experience, education, skills, projects, certifications } = data;
   const ACCENT = "#c0392b";
 
   const sec = (title: string) => (
@@ -446,7 +472,7 @@ function BoldBanner({ data, fs, lh, mar, sp, font, icons }: any) {
    classic academic LaTeX feel with ruled table rows
 ══════════════════════════════════════════════════════════════════ */
 function AcademicTabular({ data, fs, lh, mar, sp, font, icons }: any) {
-  const { personalInfo: pi, professionalSummary, education, skills, projects, certifications } = data;
+  const { personalInfo: pi, professionalSummary, experience, education, skills, projects, certifications } = data;
 
   const sec = (title: string) => (
     <div style={{ fontVariant: "small-caps", fontSize: `${fs + 2}pt`, fontWeight: 700, borderBottom: "1px solid #111827", paddingBottom: "1px", marginBottom: "5px", marginTop: `${sp}px`, color: "#111827", letterSpacing: "0.04em" }}>
@@ -574,7 +600,7 @@ function AcademicTabular({ data, fs, lh, mar, sp, font, icons }: any) {
    Teal/green underlines for university hyperlinks style
 ══════════════════════════════════════════════════════════════════ */
 function CvAcademic({ data, fs, lh, mar, sp, font, icons }: any) {
-  const { personalInfo: pi, professionalSummary, education, skills, projects, certifications } = data;
+  const { personalInfo: pi, professionalSummary, experience, education, skills, projects, certifications } = data;
 
   const sec = (title: string) => (
     <div style={{ fontSize: `${fs + 1}pt`, fontWeight: 700, color: "#111827", borderBottom: "1.5px solid #374151", paddingBottom: "2px", marginBottom: "6px", marginTop: `${sp}px` }}>
@@ -695,7 +721,7 @@ function CvAcademic({ data, fs, lh, mar, sp, font, icons }: any) {
    Ultra-clean, looks premium and editorial.
 ══════════════════════════════════════════════════════════════════ */
 function MinimalInk({ data, fs, lh, mar, sp, font, icons }: any) {
-  const { personalInfo: pi, professionalSummary, education, skills, projects, certifications } = data;
+  const { personalInfo: pi, professionalSummary, experience, education, skills, projects, certifications } = data;
 
   const sec = (title: string) => (
     <div style={{ fontSize: `${fs - 0.5}pt`, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9ca3af", marginBottom: "6px", marginTop: `${sp * 1.2}px` }}>
