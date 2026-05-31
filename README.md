@@ -115,7 +115,7 @@ Contributions, issues, and feature requests are always welcome. Feel free to che
 ---
 
 <div align="center">
-  <p>Crafted by Khushi Chorvadi</p>
+  <p>Made with ❤️ by Khushi</p>
   <p>
     <a href="https://github.com/Khushi2325">GitHub</a> • 
     <a href="https://www.linkedin.com/in/khushi-chorvadi-03857a28a/">LinkedIn</a> • 
