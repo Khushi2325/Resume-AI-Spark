@@ -39,11 +39,11 @@ function ContactLine({ data, showIcons, separator = " | ", className = "" }: {
   if (isValidLink(data.email, "email"))
     items.push(<a key="em" href={`mailto:${data.email}`} className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Mail size={8} />}{data.email}</a>);
   if (isValidLink(data.github, "github"))
-    items.push(<a key="gh" href={data.github} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Github size={8} />}{extractUsername(data.github, "github") ?? "GitHub"}</a>);
+    items.push(<a key="gh" href={data.github} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Github size={8} />}GitHub</a>);
   if (isValidLink(data.linkedin, "linkedin"))
-    items.push(<a key="li" href={data.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Linkedin size={8} />}{extractUsername(data.linkedin, "linkedin") ?? "LinkedIn"}</a>);
+    items.push(<a key="li" href={data.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Linkedin size={8} />}LinkedIn</a>);
   if (isValidLink(data.leetcode, "leetcode"))
-    items.push(<a key="lc" href={data.leetcode} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Code size={8} />}{extractUsername(data.leetcode, "leetcode") ?? "LeetCode"}</a>);
+    items.push(<a key="lc" href={data.leetcode} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Code size={8} />}LeetCode</a>);
 
   return (
     <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${className}`}>
@@ -267,9 +267,9 @@ function TwoColumnPro({ data, fs, lh, mar, sp, font, icons }: any) {
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: `${fs - 1}pt`, color: "#374151" }}>
           {isValidLink(pi.phone, "phone") && <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Phone size={8} />}{pi.phone}</span>}
           {isValidLink(pi.email, "email") && <a href={`mailto:${pi.email}`} style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Mail size={8} />}{pi.email}</a>}
-          {isValidLink(pi.github, "github") && <a href={pi.github} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Github size={8} />}{extractUsername(pi.github, "github")}</a>}
-          {isValidLink(pi.linkedin, "linkedin") && <a href={pi.linkedin} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Linkedin size={8} />}{extractUsername(pi.linkedin, "linkedin")}</a>}
-          {isValidLink(pi.leetcode, "leetcode") && <a href={pi.leetcode} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Code size={8} />}{extractUsername(pi.leetcode, "leetcode")}</a>}
+          {isValidLink(pi.github, "github") && <a href={pi.github} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Github size={8} />}GitHub</a>}
+          {isValidLink(pi.linkedin, "linkedin") && <a href={pi.linkedin} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Linkedin size={8} />}LinkedIn</a>}
+          {isValidLink(pi.leetcode, "leetcode") && <a href={pi.leetcode} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Code size={8} />}LeetCode</a>}
         </div>
 
         {/* Education in sidebar */}
@@ -490,8 +490,8 @@ function AcademicTabular({ data, fs, lh, mar, sp, font, icons }: any) {
         <div style={{ textAlign: "right", fontSize: `${fs - 0.5}pt`, color: "#374151", lineHeight: 1.6 }} className="flex flex-col items-end">
           {isValidLink(pi.phone, "phone") && <div className="flex items-center gap-1.5">{icons && <Phone size={8} />}{pi.phone}</div>}
           {isValidLink(pi.email, "email") && <div><a href={`mailto:${pi.email}`} className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Mail size={8} />}{pi.email}</a></div>}
-          {isValidLink(pi.github, "github") && <div><a href={pi.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Github size={8} />}{extractUsername(pi.github, "github")}</a></div>}
-          {isValidLink(pi.linkedin, "linkedin") && <div><a href={pi.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Linkedin size={8} />}{extractUsername(pi.linkedin, "linkedin") ?? "LinkedIn"}</a></div>}
+          {isValidLink(pi.github, "github") && <div><a href={pi.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Github size={8} />}GitHub</a></div>}
+          {isValidLink(pi.linkedin, "linkedin") && <div><a href={pi.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Linkedin size={8} />}LinkedIn</a></div>}
         </div>
       </div>
 
@@ -626,8 +626,8 @@ function CvAcademic({ data, fs, lh, mar, sp, font, icons }: any) {
         <div style={{ textAlign: "right", fontSize: `${fs - 0.5}pt`, color: "#374151", lineHeight: 1.8 }} className="flex flex-col items-end">
           {isValidLink(pi.phone, "phone") && <div className="flex items-center gap-1.5">{icons && <Phone size={8} />}{pi.phone}</div>}
           {isValidLink(pi.email, "email") && <div><a href={`mailto:${pi.email}`} className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Mail size={8} />}{pi.email}</a></div>}
-          {isValidLink(pi.github, "github") && <div><a href={pi.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Github size={8} />}{extractUsername(pi.github, "github")}</a></div>}
-          {isValidLink(pi.linkedin, "linkedin") && <div><a href={pi.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Linkedin size={8} />}{extractUsername(pi.linkedin, "linkedin") ?? "LinkedIn"}</a></div>}
+          {isValidLink(pi.github, "github") && <div><a href={pi.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Github size={8} />}GitHub</a></div>}
+          {isValidLink(pi.linkedin, "linkedin") && <div><a href={pi.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Linkedin size={8} />}LinkedIn</a></div>}
         </div>
       </div>
       <div style={{ borderBottom: "1.5px solid #111827", marginBottom: `${sp}px` }} />
