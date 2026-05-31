@@ -294,34 +294,34 @@ export const DigitalDashboard: React.FC<DigitalDashboardProps> = ({
   // Clean Theme Palette
   const cardBgClass = isDark
     ? "bg-zinc-900 border border-zinc-800/85 rounded-3xl p-6 lg:p-8 shadow-xl text-left transition-colors"
-    : "bg-white/70 backdrop-blur-md border border-white/60 shadow-[0_8px_32px_rgba(99,102,241,0.02)] hover:shadow-[0_20px_40px_rgba(99,102,241,0.06)] hover:border-indigo-100/80 rounded-3xl p-6 lg:p-8 text-left transition-all duration-300 hover:-translate-y-0.5";
+    : "bg-white/95 backdrop-blur-md border-2 border-blue-50 shadow-[0_8px_32px_rgba(59,130,246,0.06)] hover:shadow-[0_20px_40px_rgba(59,130,246,0.1)] hover:border-blue-100 rounded-3xl p-6 lg:p-8 text-left transition-all duration-300 hover:-translate-y-0.5";
 
   const searchBgClass = isDark
     ? "bg-zinc-900/60 border border-zinc-805 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 text-left transition-colors"
-    : "bg-white/60 backdrop-blur-md border border-white/60 shadow-[0_4px_30px_rgba(99,102,241,0.03)] rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 text-left transition-all duration-300";
+    : "bg-white/90 backdrop-blur-md border-2 border-blue-50 shadow-[0_4px_30px_rgba(59,130,246,0.04)] rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 text-left transition-all duration-300";
 
   const inputClass = isDark
     ? "w-full bg-zinc-950 text-neutral-200 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium placeholder-zinc-500 focus:outline-none focus:border-zinc-700 transition-all"
-    : "w-full bg-white text-neutral-800 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium placeholder-neutral-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-2xs";
+    : "w-full bg-white text-slate-800 border-2 border-blue-50 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold placeholder-blue-300 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 transition-all shadow-sm";
 
   const headingTextClass = isDark
     ? "text-neutral-50 font-display font-bold"
-    : "text-slate-900 font-display font-black";
+    : "text-blue-950 font-display font-black";
 
   const subHeadingTextClass = isDark
     ? "text-xs font-bold font-mono text-zinc-400 tracking-widest uppercase flex items-center gap-1.5 border-b border-zinc-805 pb-2"
-    : "text-xs font-bold font-mono text-indigo-950 tracking-widest uppercase flex items-center gap-1.5 border-b border-slate-100 pb-2.5";
+    : "text-xs font-black font-mono text-blue-900 tracking-widest uppercase flex items-center gap-1.5 border-b-2 border-blue-50 pb-2.5";
 
-  const bodyTextClass = isDark ? "text-zinc-300" : "text-slate-700";
-  const mutedTextClass = isDark ? "text-zinc-500" : "text-slate-500";
+  const bodyTextClass = isDark ? "text-zinc-300" : "text-blue-950 font-medium";
+  const mutedTextClass = isDark ? "text-zinc-500" : "text-blue-800/70";
 
   const contactBtnClass = isDark
     ? "group flex items-center justify-between w-full bg-zinc-950 border border-zinc-805 text-xs text-zinc-300 px-4 py-2.5 rounded-xl hover:border-zinc-700 hover:text-white transition-all font-medium"
-    : "group flex items-center justify-between w-full bg-white/80 hover:bg-white hover:shadow-[0_4px_20px_rgba(99,102,241,0.05)] border border-slate-200 text-xs text-slate-700 px-4.5 py-3 rounded-2xl hover:border-indigo-300 hover:text-indigo-650 shadow-2xs transition-all duration-200 font-semibold";
+    : "group flex items-center justify-between w-full bg-white hover:bg-blue-50 hover:shadow-[0_4px_20px_rgba(59,130,246,0.1)] border-2 border-blue-50 text-xs text-blue-900 px-4.5 py-3 rounded-2xl hover:border-blue-200 hover:text-blue-700 shadow-sm transition-all duration-200 font-bold";
 
   const actionLinkClass = isDark
     ? "text-zinc-100 hover:text-white flex items-center gap-1.5 font-bold transition-colors"
-    : "text-indigo-650 hover:text-indigo-800 flex items-center gap-1.5 font-bold transition-all";
+    : "text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-bold transition-all";
 
   return (
     <div className="space-y-8 select-text pb-12 w-full max-w-full">
@@ -1273,6 +1273,17 @@ export const DigitalDashboard: React.FC<DigitalDashboardProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Footer */}
+          <div className={`mt-10 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-[10.5px] font-mono tracking-wide ${isDark ? "border-zinc-800/80 text-zinc-500" : "border-neutral-200 text-neutral-400"}`}>
+            <p className="flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-emerald-500/80" : "bg-emerald-400"}`}></span>
+              Profile Last Updated: {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </p>
+            <p>
+              Generated securely with Resume AI Spark
+            </p>
           </div>
 
         </div>

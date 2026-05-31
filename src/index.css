@@ -33,6 +33,25 @@ html, body, #root {
   }
 
   /* Force exact premium specifications on printout */
+  .print-wrapper {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    display: block !important;
+  }
+
+  .print-content {
+    transform: none !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+
   .print-container {
     width: 100% !important;
     max-width: 100% !important;
@@ -40,6 +59,7 @@ html, body, #root {
     box-shadow: none !important;
     border: none !important;
     background: white !important;
+    height: auto !important;
   }
 
   /* Set print page margins */

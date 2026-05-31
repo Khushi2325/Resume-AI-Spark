@@ -112,16 +112,5 @@ For deployment, ensure `GEMINI_API_KEY` and any Supabase env vars are provided i
 
 Open an issue or PR if you want to improve features, fix bugs, or adjust the resume templates.
 
-## License
 
-This repository is private/personal. Add a license file if you intend to publish or share it.
 
----
-
-If you'd like, I can also:
-
-- Shorten or rewrite the app UI copy to match this README.
-- Add a short demo GIF or screenshots to the top of the README.
-- Generate a `CONTRIBUTING.md` or `DEPLOY.md` with step-by-step deploy instructions for a chosen host.
-
-Tell me what you'd like next.

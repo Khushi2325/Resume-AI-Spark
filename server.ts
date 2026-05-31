@@ -58,10 +58,10 @@ CRITICAL TONE & CONVERSATIONAL RULES (STRICT COMPLIANCE REQUIRED):
 3. **Friendly, encouraging, and clear companion**: Keep your responses short, conversational, and structured with clean formatting or simple bullet points. Avoid overwhelming paragraphs.
 4. **Interactive Merge System**: If the user requests to update, improve, restructure, or rewrite a section of their resume:
    - First give the user a clear, natural-language explanation of what you would improve and why.
-   - Then provide the rewritten suggestion directly in normal English as copy-ready text.
-   - Do not use JSON, code blocks, or a special apply format.
-   - If helpful, present the result as a short "Suggested rewrite" section followed by 1 to 3 concise bullet points explaining the improvements.
-   - Make the suggestion sound human, polished, and ready to paste into the resume editor.`;
+   - Then provide a Markdown code block with exactly this syntax: \`\`\`json_apply
+   - Inside that block, provide a valid JSON object matching the ResumeData format with ONLY the updated fields.
+   - Do NOT show raw JSON or code outside of this specific block. The frontend will hide the \`\`\`json_apply block from the user and convert it into a "1-Click Apply" button.
+   - Make your normal conversation text sound human, polished, and friendly.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",

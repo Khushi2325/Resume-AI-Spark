@@ -22,18 +22,6 @@ export const isValidLink = (
     return /^\+?[0-9\s\-()]{7,18}$/.test(val);
   }
 
-  if (type === 'github') {
-    return lowercase.includes("github.com");
-  }
-
-  if (type === 'leetcode') {
-    return lowercase.includes("leetcode.com");
-  }
-
-  if (type === 'linkedin') {
-    return lowercase.includes("linkedin.com");
-  }
-
   if (type === 'url') {
     try {
       new URL(val.startsWith('http') ? val : 'https://' + val);
@@ -43,6 +31,8 @@ export const isValidLink = (
     }
   }
 
+  // For social links (github, linkedin, leetcode), allow any non-empty string 
+  // so users can input just their usernames or handles.
   return true;
 };
 

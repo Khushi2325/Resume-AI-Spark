@@ -92,6 +92,18 @@ export const initialResumeData: ResumeData = {
       ],
       githubUrl: "https://github.com/aaravsharma/gesturesync",
     },
+    {
+      id: "proj-4",
+      title: "SmartSpend -- Personal Finance Tracker",
+      year: "2024",
+      techStack: ["React Native", "Firebase", "Redux"],
+      bullets: [
+        "Developed a cross-platform mobile application to help users track daily expenses and visualize financial health.",
+        "Integrated Firebase real-time database to sync user data seamlessly across multiple devices with offline support.",
+        "Designed intuitive data visualization charts and implemented state management using Redux for high performance.",
+      ],
+      githubUrl: "https://github.com/aaravsharma/smartspend",
+    },
   ],
   certifications: [
     {

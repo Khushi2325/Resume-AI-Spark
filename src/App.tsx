@@ -41,7 +41,14 @@ import {
   Zap,
   CheckCircle,
   HelpCircle,
-  Code2
+  Code2,
+  Mail,
+  MapPin,
+  Linkedin,
+  Twitter,
+  Heart,
+  Check,
+  Phone
 } from "lucide-react";
 
 const ACCOUNTS_STORAGE_KEY = "khushi-spark-user-accounts";
@@ -187,7 +194,7 @@ export default function App() {
 
     const loadedResume = resumeRow?.resume_data && Object.keys(resumeRow.resume_data).length > 0
       ? resumeRow.resume_data as ResumeData
-      : blankResumeData;
+      : initialResumeData;
 
     const userAccount: UserAccount = {
       id: profile.id,
@@ -245,7 +252,7 @@ export default function App() {
         }
       } else {
         const isDemo = currentUser.username.toLowerCase() === "demo";
-        setResumeData(isDemo ? initialResumeData : blankResumeData);
+        setResumeData(initialResumeData);
       }
     } else {
       // Default guest mode: load initialResumeData and restrict to split builder
@@ -431,21 +438,21 @@ export default function App() {
       setMargins(0.7);
       setSectionSpacing(13);
     } else if (preset === "executive-sleek") {
-      setResumeLayout("executive");
+      setResumeLayout("two-column");
       setFontTheme("modern-sans");
       setFontSize(10);
       setLineHeight(1.25);
       setMargins(0.65);
       setSectionSpacing(11);
     } else if (preset === "editorial-crisp") {
-      setResumeLayout("blue-accent");
+      setResumeLayout("bold-banner");
       setFontTheme("editorial-lora");
       setFontSize(10);
       setLineHeight(1.3);
       setMargins(0.65);
       setSectionSpacing(11);
     } else if (preset === "compact-efficient") {
-      setResumeLayout("compact");
+      setResumeLayout("minimal");
       setFontTheme("classic-serif");
       setFontSize(9);
       setLineHeight(1.15);
@@ -876,9 +883,7 @@ export default function App() {
           : "no-print shrink-0 border-b border-sky-100 bg-white/90 backdrop-blur px-7 py-4 flex items-center justify-between sticky top-0 z-50 shadow-[0_8px_30px_rgba(14,165,233,0.08)] transition-colors text-slate-900"
         }>
           <div className="flex items-center gap-3 text-left select-none">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white font-extrabold shadow-lg shadow-sky-500/25">
-              <Sparkles size={18} />
-            </div>
+            <img src="/app-icon.svg" className="w-11 h-11 rounded-2xl shadow-lg shadow-sky-500/25 object-cover" alt="Resume AI Spark Logo" />
             <div>
               <span className="font-extrabold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-blue-700 block">
                 RESUME AI SPARK
@@ -910,10 +915,9 @@ export default function App() {
           {/* LEFT COLUMN: PRODUCT PRESENTATION */}
           <div className="lg:col-span-7 flex flex-col space-y-8 text-left">
             <div className="space-y-4">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-[11px] font-mono tracking-widest font-extrabold uppercase select-none ${isDark ? "border-sky-500/20 bg-sky-500/5 text-sky-400" : "border-sky-200 bg-white text-sky-700 shadow-sm"
-                }`}>
-                <Zap size={12} />
-                Next Generation Studio
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 text-[11px] font-mono tracking-widest font-extrabold uppercase select-none ${isDark ? "border-sky-500/20 bg-sky-500/5 text-sky-400" : "border-blue-100 bg-white text-blue-700 shadow-sm"}`}>
+                <Check size={14} className={isDark ? "text-sky-400" : "text-blue-500"} />
+                Pristine Live Page Preview
               </div>
 
               <h1 className={`max-w-4xl text-5xl sm:text-6xl font-black leading-[1.05] tracking-tight ${isDark ? "text-white" : "text-slate-950"}`}>
@@ -931,10 +935,9 @@ export default function App() {
             </div>
 
             {/* INTERACTIVE DEMO SANDBOX WIDGET */}
-            <div className={`w-full border rounded-2xl p-6 space-y-5 transition-all duration-300 shadow-xl ${isDark ? "bg-zinc-900/90 border-zinc-800" : "bg-white/95 border-sky-100 shadow-[0_24px_70px_rgba(14,165,233,0.12)]"
-              }`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-sky-100 dark:border-zinc-800 gap-2">
-                <h3 className={`text-sm font-extrabold tracking-wide flex items-center gap-2 ${isDark ? "text-slate-350" : "text-slate-800"}`}>
+            <div className={`w-full border-2 rounded-2xl p-6 space-y-5 transition-all duration-300 shadow-sm ${isDark ? "bg-zinc-900/90 border-zinc-800" : "bg-white/95 border-blue-50"}`}>
+              <div className="flex items-center justify-between">
+                <h3 className={`text-sm font-black tracking-wide flex items-center gap-2 ${isDark ? "text-slate-350" : "text-blue-950"}`}>
                   <Sliders size={15} className="text-sky-500" />
                   Live Feature Showcase Sandbox
                 </h3>
@@ -947,8 +950,8 @@ export default function App() {
                   type="button"
                   onClick={() => setLandingDemoTab("chat")}
                   className={`flex-1 py-2 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${landingDemoTab === "chat"
-                      ? (isDark ? "bg-zinc-850 text-white shadow-xs" : "bg-white text-sky-700 shadow-sm border border-sky-100")
-                      : (isDark ? "text-zinc-400 hover:text-white" : "text-slate-600 hover:text-sky-700")
+                      ? (isDark ? "bg-zinc-850 text-white shadow-xs" : "bg-white text-blue-700 shadow-sm border-2 border-blue-100")
+                      : (isDark ? "text-zinc-400 hover:text-white" : "text-blue-600/70 hover:text-blue-800")
                     }`}
                 >
                   <MessageSquare size={13} className="inline mr-1.5 align-[-2px]" />
@@ -958,8 +961,8 @@ export default function App() {
                   type="button"
                   onClick={() => setLandingDemoTab("spacing")}
                   className={`flex-1 py-2 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${landingDemoTab === "spacing"
-                      ? (isDark ? "bg-zinc-850 text-white shadow-xs" : "bg-white text-sky-700 shadow-sm border border-sky-100")
-                      : (isDark ? "text-zinc-400 hover:text-white" : "text-slate-600 hover:text-sky-700")
+                      ? (isDark ? "bg-zinc-850 text-white shadow-xs" : "bg-white text-blue-700 shadow-sm border-2 border-blue-100")
+                      : (isDark ? "text-zinc-400 hover:text-white" : "text-blue-600/70 hover:text-blue-800")
                     }`}
                 >
                   <Sliders size={13} className="inline mr-1.5 align-[-2px]" />
@@ -969,8 +972,8 @@ export default function App() {
                   type="button"
                   onClick={() => setLandingDemoTab("lens")}
                   className={`flex-1 py-2 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${landingDemoTab === "lens"
-                      ? (isDark ? "bg-zinc-850 text-white shadow-xs" : "bg-white text-sky-700 shadow-sm border border-sky-100")
-                      : (isDark ? "text-zinc-400 hover:text-white" : "text-slate-600 hover:text-sky-700")
+                      ? (isDark ? "bg-zinc-850 text-white shadow-xs" : "bg-white text-blue-700 shadow-sm border-2 border-blue-100")
+                      : (isDark ? "text-zinc-400 hover:text-white" : "text-blue-600/70 hover:text-blue-800")
                     }`}
                 >
                   <Eye size={13} className="inline mr-1.5 align-[-2px]" />
@@ -981,8 +984,7 @@ export default function App() {
               {/* Tab Content 1: AI Chatbot */}
               {landingDemoTab === "chat" && (
                 <div className="space-y-3">
-                  <div className={`h-40 rounded-2xl p-4 overflow-y-auto space-y-3 text-[12px] flex flex-col ${isDark ? "bg-zinc-950/60 border border-zinc-850" : "bg-sky-50/70 border border-sky-100 shadow-inner text-slate-700"
-                    }`}>
+                  <div className={`h-40 rounded-2xl p-4 overflow-y-auto space-y-3 text-[12px] flex flex-col ${isDark ? "bg-zinc-950/60 border border-zinc-850" : "bg-white border-2 border-blue-50 shadow-sm text-slate-800 font-medium"}`}>
                     {demoChatHistory.map((msg, idx) => (
                       <div key={idx} className={`flex gap-2 max-w-[90%] ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}>
                         <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 border ${msg.role === "user" ? "bg-slate-200 border-slate-300 text-slate-705" : "bg-sky-500/10 border-sky-500/20 text-sky-400"
@@ -990,8 +992,8 @@ export default function App() {
                           {msg.role === "user" ? <User size={10} /> : <Bot size={10} />}
                         </div>
                         <div className={`p-2.5 rounded-2xl leading-relaxed whitespace-pre-wrap ${msg.role === "user"
-                            ? "bg-sky-600 text-white rounded-tr-none font-semibold text-left"
-                            : isDark ? "bg-zinc-900 border border-zinc-800 rounded-tl-none text-zinc-300 text-left" : "bg-white border border-sky-100 rounded-tl-none text-slate-700 shadow-sm text-left"
+                            ? isDark ? "bg-indigo-600 rounded-tr-none text-white shadow-md self-end text-right" : "bg-blue-600 rounded-tr-none text-white shadow-md self-end text-right"
+                            : isDark ? "bg-zinc-900 border border-zinc-800 rounded-tl-none text-zinc-300 text-left" : "bg-blue-50 border-2 border-blue-100 rounded-tl-none text-blue-950 shadow-sm text-left"
                           }`}>
                           {msg.text}
                         </div>
@@ -1028,7 +1030,7 @@ export default function App() {
                   <div className="flex flex-col justify-center space-y-4">
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10.5px] font-bold uppercase tracking-wider font-mono">
-                        <span className={isDark ? "text-slate-400" : "text-slate-500"}>Font Size</span>
+                        <span className={isDark ? "text-slate-400" : "text-blue-800/80 font-bold"}>Font Size</span>
                         <span className="text-sky-500 font-extrabold">{demoFontSize}px</span>
                       </div>
                       <input
@@ -1043,7 +1045,7 @@ export default function App() {
 
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10.5px] font-bold uppercase tracking-wider font-mono">
-                        <span className={isDark ? "text-slate-400" : "text-slate-505"}>Section Gaps</span>
+                        <span className={isDark ? "text-slate-400" : "text-blue-800/80 font-bold"}>Section Gaps</span>
                         <span className="text-sky-500 font-extrabold">{demoSectionSpacing}px</span>
                       </div>
                       <input
@@ -1057,8 +1059,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className={`border rounded-2xl p-4 overflow-hidden flex flex-col justify-between transition-all ${isDark ? "bg-zinc-950/60 border-zinc-850" : "bg-slate-50/70 border-slate-200/50 shadow-inner"
-                    }`}>
+                  <div className={`border rounded-2xl p-4 overflow-hidden flex flex-col justify-between transition-all ${isDark ? "bg-zinc-950/60 border-zinc-850" : "bg-white border-2 border-blue-50 shadow-sm"}`}>
                     <div
                       className="bg-white rounded-lg p-3 shadow-md border border-slate-200 text-left transition-all duration-150 select-none overflow-hidden text-slate-700"
                       style={{ fontSize: `${demoFontSize}px` }}
@@ -1091,13 +1092,12 @@ export default function App() {
               {/* Tab Content 3: Detail Lens */}
               {landingDemoTab === "lens" && (
                 <div className="space-y-3">
-                  <p className={`text-[10px] uppercase font-mono tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <p className={`text-[10px] uppercase font-mono font-bold tracking-wider ${isDark ? "text-slate-400" : "text-blue-800/80"}`}>
                     Hover mouse over the card below to see the live magnifier zoom text instantly!
                   </p>
 
                   <div
-                    className={`relative border rounded-2xl p-6 flex items-center justify-center transition-all overflow-hidden cursor-crosshair ${isDark ? "bg-zinc-950/60 border-zinc-850" : "bg-slate-50/70 border-slate-200/50 shadow-inner"
-                      }`}
+                    className={`relative border-2 rounded-2xl p-6 flex items-center justify-center transition-all overflow-hidden cursor-crosshair ${isDark ? "bg-zinc-950/60 border-zinc-850" : "bg-white border-blue-50 shadow-sm"}`}
                     onMouseMove={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
                       const x = e.clientX - rect.left;
@@ -1309,7 +1309,7 @@ export default function App() {
         </main>
 
         {/* ================= PLATFORM FEATURE GRID ================= */}
-        <section className="relative z-10 max-w-7xl mx-auto w-full px-6 py-12 border-t border-sky-100 dark:border-zinc-800 mt-6">
+        <section id="features" className="relative z-10 max-w-7xl mx-auto w-full px-6 py-12 border-t border-sky-100 dark:border-zinc-800 mt-6">
           <div className="text-center space-y-3 mb-12">
             <h2 className={`text-2xl sm:text-3xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>
               Packed with Elite Professional Features
@@ -1407,7 +1407,7 @@ export default function App() {
         </section>
 
         {/* ================= FAQ SECTION ================= */}
-        <section className="relative z-10 max-w-4xl mx-auto w-full px-6 py-12 border-t border-sky-100 dark:border-zinc-800 text-left">
+        <section id="faq" className="relative z-10 max-w-4xl mx-auto w-full px-6 py-12 border-t border-sky-100 dark:border-zinc-800 text-left">
           <div className="text-center space-y-3 mb-10">
             <h2 className={`text-2xl sm:text-3xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>
               Frequently Asked Questions
@@ -1450,6 +1450,76 @@ export default function App() {
           </div>
         </section>
 
+        {/* Mega Footer */}
+        <footer className={`relative z-10 w-full border-t pt-16 pb-8 px-6 mt-12 text-left ${isDark ? "border-zinc-800/80 bg-zinc-950/50" : "border-sky-100 bg-slate-50"}`}>
+          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+            
+            {/* Column 1: Brand & Bio */}
+            <div className="col-span-1 md:col-span-2 pr-0 md:pr-10">
+              <div className="flex items-center gap-2 mb-4">
+                <img src="/app-icon.svg" className="w-6 h-6 rounded-md shadow-sm object-cover" alt="Resume AI Spark Logo" />
+                <span className={`font-black text-lg tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  RESUME AI SPARK
+                </span>
+              </div>
+              <p className={`text-xs leading-relaxed mb-6 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                The ultimate AI-powered toolkit for crafting perfectly formatted, 
+                high-impact corporate and academic resumes. Built to eliminate the layout hassle and get you hired faster.
+              </p>
+              <div className="flex items-center gap-3">
+                <a href="https://github.com/Khushi2325" target="_blank" rel="noreferrer" className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isDark ? "bg-zinc-900 hover:bg-sky-500/20 hover:text-sky-400 text-zinc-400" : "bg-white border border-slate-200 shadow-sm hover:border-sky-300 hover:text-sky-600 text-slate-500"}`}>
+                  <Github size={14} />
+                </a>
+                <a href="https://x.com/Khushi4317" target="_blank" rel="noreferrer" className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isDark ? "bg-zinc-900 hover:bg-sky-500/20 hover:text-sky-400 text-zinc-400" : "bg-white border border-slate-200 shadow-sm hover:border-sky-300 hover:text-sky-600 text-slate-500"}`}>
+                  <Twitter size={14} />
+                </a>
+                <a href="https://www.linkedin.com/in/khushi-chorvadi-03857a28a/" target="_blank" rel="noreferrer" className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isDark ? "bg-zinc-900 hover:bg-sky-500/20 hover:text-sky-400 text-zinc-400" : "bg-white border border-slate-200 shadow-sm hover:border-sky-300 hover:text-sky-600 text-slate-500"}`}>
+                  <Linkedin size={14} />
+                </a>
+              </div>
+            </div>
+
+            {/* Column 2: Resources */}
+            <div>
+              <h4 className={`text-sm font-bold mb-4 uppercase tracking-wider ${isDark ? "text-zinc-200" : "text-slate-800"}`}>
+                Resources
+              </h4>
+              <ul className={`text-xs space-y-3 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                <li><a href="https://github.com/Khushi2325/Resume-AI-Spark#readme" target="_blank" rel="noreferrer" className="hover:text-sky-500 transition-colors">Documentation</a></li>
+                <li><a href="#features" className="hover:text-sky-500 transition-colors">Features</a></li>
+                <li><a href="https://linkedin.com/in/khushichorvadi" target="_blank" rel="noreferrer" className="hover:text-sky-500 transition-colors">Career Blog</a></li>
+                <li><a href="#faq" className="hover:text-sky-500 transition-colors">FAQ</a></li>
+              </ul>
+            </div>
+
+            {/* Column 3: Contact */}
+            <div>
+              <h4 className={`text-sm font-bold mb-4 uppercase tracking-wider ${isDark ? "text-zinc-200" : "text-slate-800"}`}>
+                Contact Us
+              </h4>
+              <ul className={`text-xs space-y-3 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                <li className="flex items-start gap-2">
+                  <Mail size={14} className="mt-0.5 text-sky-500 shrink-0" />
+                  <a href="mailto:chorvadikhushi@gmail.com" className="hover:text-sky-500 transition-colors">chorvadikhushi@gmail.com</a>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Phone size={14} className="text-sky-500 shrink-0" />
+                  <a href="tel:+919512377089" className="hover:text-sky-500 transition-colors">+91 951 237 7089</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className={`max-w-5xl mx-auto pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-4 text-xs ${isDark ? "border-zinc-800 text-slate-500" : "border-slate-200 text-slate-500"}`}>
+            <p className="flex items-center gap-1.5">
+              &copy; {new Date().getFullYear()} Resume AI Spark. All rights reserved.
+            </p>
+            <p className="flex items-center gap-1.5">
+              Made with <Heart size={12} className="text-rose-500 fill-rose-500" /> by Khushi
+            </p>
+          </div>
+        </footer>
+
       </div>
     );
   }
@@ -1477,16 +1547,14 @@ export default function App() {
             className="flex items-center gap-2.5 text-left focus:outline-none group cursor-pointer select-none"
             title="Go to Main Landing Page"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-white font-extrabold shadow-lg shadow-sky-500/20 transition-transform group-hover:scale-105 animate-pulse">
-              <Sparkles size={18} />
-            </div>
+            <img src="/app-icon.svg" className="w-9 h-9 rounded-xl shadow-lg shadow-sky-500/20 object-cover transition-transform group-hover:scale-105 animate-pulse" alt="Resume AI Spark Logo" />
             <div>
               <span className="font-extrabold text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-indigo-400 group-hover:underline block">
                 RESUME AI SPARK
               </span>
-              <p className={`text-[9.5px] -mt-0.5 ${subTitleTextClass}`}>
+              <p className={`text-[11px] -mt-0.5 font-bold ${isDark ? "text-neutral-400" : "text-blue-900/60"}`}>
                 {currentUser ? (
-                  <>Welcome back, <span className="font-bold underline text-neutral-450 dark:text-neutral-200">{currentUser.username}</span></>
+                  <>Welcome back, <span className={`font-bold underline ${isDark ? "text-neutral-200" : "text-blue-900"}`}>{currentUser.username}</span></>
                 ) : (
                   <span className="font-bold text-sky-400">Guest Showcase Mode</span>
                 )}
@@ -1827,12 +1895,12 @@ export default function App() {
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        ["classic", "Classic Center"],
-                        ["modern-left", "Modern Left"],
-                        ["blue-accent", "Blue Accent"],
-                        ["compact", "Compact"],
-                        ["executive", "Executive"],
-                        ["minimal", "Minimal"],
+                        ["classic", "Classic Scholar"],
+                        ["two-column", "Two-Column Pro"],
+                        ["bold-banner", "Bold Banner"],
+                        ["tabular", "Academic Tabular"],
+                        ["cv-academic", "CV Academic"],
+                        ["minimal", "Minimal Ink"],
                       ].map(([value, label]) => (
                         <button
                           key={value}
@@ -2037,7 +2105,7 @@ export default function App() {
               {/* Simulated letter paper sheet */}
               <div className="w-full overflow-x-auto flex justify-center py-0.5 select-text">
                 <div
-                  className={`relative overflow-visible mx-auto flex justify-center py-2 shrink-0 rounded-sm bg-white ${isDark ? "shadow-2xl border border-slate-850" : "shadow-md border border-slate-200"
+                  className={`print-wrapper relative overflow-visible mx-auto flex justify-center py-2 shrink-0 rounded-sm bg-white ${isDark ? "shadow-2xl border border-slate-850" : "shadow-md border border-slate-200"
                     }`}
                   style={{
                     width: `${8.5 * effectiveZoom}in`,
@@ -2049,7 +2117,7 @@ export default function App() {
                   onMouseLeave={() => setLensActive(false)}
                 >
                   <div
-                    className="origin-top shrink-0 transition-transform duration-300"
+                    className="print-content origin-top shrink-0 transition-transform duration-300"
                     style={{
                       transform: `scale(${effectiveZoom})`,
                       transformOrigin: "top center",
