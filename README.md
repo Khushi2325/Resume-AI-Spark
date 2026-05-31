@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./public/app-icon.svg" alt="Resume AI Spark Logo" width="120" />
 
-  # 🌟 Resume AI Spark
+  # Resume AI Spark
 
   **The ultimate AI-powered toolkit for crafting perfectly formatted, high-impact corporate and academic resumes.**
 
@@ -10,32 +10,32 @@
   [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC.svg)](https://tailwindcss.com/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org/)
   
-  [Features](#sparkles-features) • [Quick Start](#rocket-quick-start) • [Architecture](#building_construction-project-layout)
+  [Features](#features) • [Quick Start](#quick-start) • [Architecture](#project-layout)
 
 </div>
 
 ---
 
-## 📖 About The Project
+## About The Project
 
 **Resume AI Spark** is a focused resume builder and presentation workspace built by Khushi Chorvadi. It combines a pristine **Live WYSIWYG Editor**, a strict print-ready preview (PDF/print CSS friendly), and an optional Supabase-backed persistent storage system. 
 
-What makes it unique? The backend proxies **Google Gemini AI** calls to act as your personal career assistant—offering real-time feedback, professional rewrite suggestions, and impact-driven bullet point enhancements!
+What makes it unique? The backend proxies **Google Gemini AI** calls to act as your personal career assistant—offering real-time feedback, professional rewrite suggestions, and impact-driven bullet point enhancements.
 
 ---
 
-## :sparkles: Features
+## Features
 
-- **🎨 Vibrant, Pristine UI**: An incredibly clean, modern "Blue & White" aesthetic featuring glassmorphism, dynamic shadows, and meticulously crafted typography.
-- **⚡ Live WYSIWYG Editor**: Watch your resume compile instantly side-by-side as you type. No waiting, no refreshing.
-- **🖨️ Print-Ready Layout Controls**: Fine-tune spacing, typography, and density to guarantee your resume looks perfect whether viewed on a screen or printed on paper.
-- **🤖 Gemini AI Assistant**: Stuck on how to phrase a bullet point? The built-in AI will analyze your experience and suggest powerful, action-oriented rewrites.
-- **☁️ Supabase Cloud Storage**: Optionally save and sync your profiles securely using Supabase Auth & Database.
-- **📱 Fully Responsive**: A seamless experience across desktop workspaces and mobile devices.
+- **Vibrant, Pristine UI**: An incredibly clean, modern "Blue & White" aesthetic featuring glassmorphism, dynamic shadows, and meticulously crafted typography.
+- **Live WYSIWYG Editor**: Watch your resume compile instantly side-by-side as you type. No waiting, no refreshing.
+- **Print-Ready Layout Controls**: Fine-tune spacing, typography, and density to guarantee your resume looks perfect whether viewed on a screen or printed on paper.
+- **Gemini AI Assistant**: Stuck on how to phrase a bullet point? The built-in AI will analyze your experience and suggest powerful, action-oriented rewrites.
+- **Supabase Cloud Storage**: Optionally save and sync your profiles securely using Supabase Auth & Database.
+- **Fully Responsive**: A seamless experience across desktop workspaces and mobile devices.
 
 ---
 
-## :rocket: Quick Start
+## Quick Start
 
 **Prerequisites:** Node.js (v18+), npm.
 
@@ -70,7 +70,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application in y
 
 ---
 
-## :wrench: Tech Stack
+## Tech Stack
 
 - **Frontend:** React 18, TypeScript, Tailwind CSS, Lucide React (Icons).
 - **Tooling:** Vite, ESLint, PostCSS.
@@ -80,7 +80,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application in y
 
 ---
 
-## :building_construction: Project Layout
+## Project Layout
 
 - `src/components/` — Core UI components:
   - `DigitalDashboard` — The landing page and feature showcase.
@@ -92,7 +92,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application in y
 
 ---
 
-## :package: Build & Deploy
+## Build & Deploy
 
 1. Build the frontend and server bundle for production:
 ```bash
@@ -108,14 +108,14 @@ npm start
 
 ---
 
-## :handshake: Contributing
+## Contributing
 
-Contributions, issues, and feature requests are always welcome! Feel free to check the [issues page](https://github.com/Khushi2325/Resume-AI-Spark/issues) if you want to contribute.
+Contributions, issues, and feature requests are always welcome. Feel free to check the [issues page](https://github.com/Khushi2325/Resume-AI-Spark/issues) if you want to contribute.
 
 ---
 
 <div align="center">
-  <p>Crafted with ❤️ by Khushi</p>
+  <p>Crafted by Khushi Chorvadi</p>
   <p>
     <a href="https://github.com/Khushi2325">GitHub</a> • 
     <a href="https://www.linkedin.com/in/khushi-chorvadi-03857a28a/">LinkedIn</a> • 
