@@ -155,45 +155,97 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
     const allUrls = [...new Set([...annotationUrls, ...textUrls].map((u) => u.trim()).filter(Boolean))];
     console.log("[ResumeParser] Extracted URLs from PDF:", allUrls);
 
-    // ── 5. Build smart URL hint for Gemini ────────────────────────────────────
-    let urlHint = "";
-    if (allUrls.length > 0) {
-      const gh   = allUrls.filter((u) => u.includes("github.com"));
-      const li   = allUrls.filter((u) => u.includes("linkedin.com"));
-      const lc   = allUrls.filter((u) => u.includes("leetcode.com"));
-      const live = allUrls.filter((u) =>
-        u.includes("vercel.app") || u.includes("netlify.app") ||
-        u.includes("railway.app") || u.includes("render.com") || u.includes("herokuapp.com")
-      );
-      const cert = allUrls.filter((u) =>
-        u.includes("credly") || u.includes("coursera") ||
-        u.includes("udemy") || u.includes("hackerrank") || u.includes("drive.google")
-      );
-      const other = allUrls.filter((u) => !gh.includes(u) && !li.includes(u) && !lc.includes(u) && !live.includes(u) && !cert.includes(u));
+    // ── 5. Extract profile URLs from text when annotations only give base domains ───
+    // PDFs sometimes store icon links with only the base domain (e.g. https://github.com/)
+    // In that case, we try to extract the full profile path from the visible PDF text.
+    const getPath = (url: string, domain: string): string => {
+      const after = url.toLowerCase().split(domain)[1] ?? "";
+      return after.replace(/^\//, ""); // strip leading slash
+    };
 
-      urlHint = `
-=== ALL HYPERLINKS EXTRACTED FROM THIS PDF ===
-These URLs come directly from the PDF's embedded hyperlink layer (including icon-based links).
-You MUST use them — place each one in the correct JSON field:
+    // GitHub: prefer github.com/username (1 path segment, at least 2 chars)
+    let githubProfile = allUrls.find((u) => {
+      if (!u.includes("github.com")) return false;
+      const path = getPath(u, "github.com");
+      return path.length >= 2 && !path.includes("/"); // exactly 1 segment = profile
+    });
+    // Fallback: extract from raw text (e.g. visible text "github.com/Khushi2325")
+    if (!githubProfile) {
+      const tm = rawText.match(/github\.com\/([a-zA-Z0-9_-]{2,39})(?![/\w])/i);
+      if (tm) githubProfile = `https://github.com/${tm[1]}`;
+    }
+    // GitHub repo URLs (2 path segments = github.com/user/repo)
+    const githubRepos = allUrls.filter((u) => {
+      if (!u.includes("github.com")) return false;
+      const path = getPath(u, "github.com");
+      return path.includes("/") && path.split("/").filter(Boolean).length >= 2;
+    });
 
-${gh.length   ? `GITHUB (${gh.length}):\n${gh.map((u) => `  → ${u}`).join("\n")}\n  → Short path (github.com/username) = personalInfo.github\n  → Repo path (github.com/user/repo) = projects[matching].githubUrl\n` : ""}${li.length   ? `LINKEDIN:\n${li.map((u) => `  → ${u}`).join("\n")}\n  → personalInfo.linkedin\n` : ""}${lc.length   ? `LEETCODE:\n${lc.map((u) => `  → ${u}`).join("\n")}\n  → personalInfo.leetcode\n` : ""}${live.length ? `LIVE/DEMO SITES:\n${live.map((u) => `  → ${u}`).join("\n")}\n  → projects[matching].liveUrl\n` : ""}${cert.length ? `CERTIFICATE LINKS:\n${cert.map((u) => `  → ${u}`).join("\n")}\n  → certifications[matching].certificateUrl\n` : ""}${other.length ? `OTHER:\n${other.map((u) => `  → ${u}`).join("\n")}\n` : ""}=== END HYPERLINKS ===
-`;
+    // LinkedIn: prefer linkedin.com/in/... (has /in/ path)
+    let linkedinProfile = allUrls.find((u) => u.includes("linkedin.com/in/"));
+    if (!linkedinProfile) {
+      linkedinProfile = allUrls.find((u) => {
+        if (!u.includes("linkedin.com")) return false;
+        return getPath(u, "linkedin.com").length >= 2;
+      });
+    }
+    // Fallback: extract from raw text
+    if (!linkedinProfile) {
+      const tm = rawText.match(/linkedin\.com\/(in\/[a-zA-Z0-9_-]+)/i);
+      if (tm) linkedinProfile = `https://www.linkedin.com/${tm[1]}`;
     }
 
-    // ── 6. Build the extraction prompt ────────────────────────────────────────
+    // LeetCode: leetcode.com/u/username or leetcode.com/username
+    let leetcodeProfile = allUrls.find((u) => {
+      if (!u.includes("leetcode.com")) return false;
+      return getPath(u, "leetcode.com").length >= 2;
+    });
+    if (!leetcodeProfile) {
+      const tm = rawText.match(/leetcode\.com\/(?:u\/)?([a-zA-Z0-9_-]{2,})/i);
+      if (tm) leetcodeProfile = `https://leetcode.com/${tm[1]}`;
+    }
+
+    // Live/cert links (unchanged)
+    const liveLinks = allUrls.filter((u) =>
+      u.includes("vercel.app") || u.includes("netlify.app") ||
+      u.includes("railway.app") || u.includes("render.com") || u.includes("herokuapp.com")
+    );
+    const certLinks = allUrls.filter((u) =>
+      u.includes("credly") || u.includes("coursera") ||
+      u.includes("udemy") || u.includes("hackerrank") || u.includes("drive.google")
+    );
+
+    console.log("[ResumeParser] Profile URLs resolved:", { githubProfile, linkedinProfile, leetcodeProfile });
+    console.log("[ResumeParser] Repo URLs:", githubRepos);
+
+    // ── 6. Build smart URL hint for Gemini ────────────────────────────────────
+    let urlHint = "";
+    const hintParts: string[] = [];
+    if (githubProfile)  hintParts.push(`GITHUB PROFILE:\n  → ${githubProfile}\n  Put in: personalInfo.github`);
+    if (githubRepos.length) hintParts.push(`GITHUB REPO LINKS (${githubRepos.length} found — assign each to the matching project):\n${githubRepos.map((u) => `  → ${u}`).join("\n")}\n  Put in: projects[matching project by name].githubUrl`);
+    if (linkedinProfile) hintParts.push(`LINKEDIN PROFILE:\n  → ${linkedinProfile}\n  Put in: personalInfo.linkedin`);
+    if (leetcodeProfile) hintParts.push(`LEETCODE PROFILE:\n  → ${leetcodeProfile}\n  Put in: personalInfo.leetcode`);
+    if (liveLinks.length) hintParts.push(`LIVE/DEMO SITE LINKS:\n${liveLinks.map((u) => `  → ${u}`).join("\n")}\n  Put in: projects[matching project by name].liveUrl`);
+    if (certLinks.length) hintParts.push(`CERTIFICATE LINKS:\n${certLinks.map((u) => `  → ${u}`).join("\n")}\n  Put in: certifications[matching cert].certificateUrl`);
+
+    if (hintParts.length > 0) {
+      urlHint = `=== HYPERLINKS EXTRACTED FROM PDF (MUST USE ALL OF THESE) ===\n\n${hintParts.join("\n\n")}\n\n=== END HYPERLINKS ===`;
+    }
+
+    // ── 7. Build the extraction prompt ────────────────────────────────────────
     const prompt = `You are a world-class resume parser. Extract ALL information from this resume and return ONLY a valid JSON object.
 
 ${urlHint}
 
-Return this EXACT JSON structure. Replace the placeholder strings with real extracted values:
+Return this EXACT JSON structure. Fill every field from the actual resume content:
 {
   "personalInfo": {
     "name": "",
     "phone": "",
     "email": "",
-    "github": "${allUrls.find((u) => u.includes("github.com") && !u.split("github.com/")[1]?.includes("/")) ?? ""}",
-    "linkedin": "${allUrls.find((u) => u.includes("linkedin.com")) ?? ""}",
-    "leetcode": "${allUrls.find((u) => u.includes("leetcode.com")) ?? ""}"
+    "github": "${githubProfile ?? ""}",
+    "linkedin": "${linkedinProfile ?? ""}",
+    "leetcode": "${leetcodeProfile ?? ""}"
   },
   "professionalSummary": "",
   "education": [
@@ -214,14 +266,16 @@ Return this EXACT JSON structure. Replace the placeholder strings with real extr
 }
 
 MANDATORY RULES:
-1. Fill in ALL fields from the actual resume content
-2. The github/linkedin/leetcode values in the template above are pre-filled hints — use them unless you find better/more complete URLs in the document
-3. All URLs must start with https://
-4. Use "" for missing strings, [] for missing arrays
-5. Extract ALL experience entries (internships, part-time, full-time, freelance)
-6. Each bullet point = separate string in array
-7. techStack = array of individual technology names
-8. Group skills by category
+1. Fill ALL fields from the actual resume content — do not leave anything empty if it exists in the document
+2. The github/linkedin/leetcode fields above are pre-filled with the best URL found — keep them EXACTLY as shown unless you find a more complete URL in the document text
+3. For project githubUrl: match each GitHub repo link from the HYPERLINKS section above to the correct project by comparing the repo name to the project title
+4. For project liveUrl: match each live site link to the correct project similarly
+5. All URLs must start with https:// — add prefix if missing
+6. Use "" for missing strings, [] for missing arrays
+7. Extract ALL experience entries (internships, part-time, full-time, freelance) — do NOT skip any
+8. Each bullet point = separate string in the array
+9. techStack = array of individual technology names (not one long string)
+10. Group skills by category (Languages, Backend, Frontend, Tools, etc.)
 
 Return ONLY the raw JSON. No markdown. No explanation. No \`\`\`json wrapper.`;
 
