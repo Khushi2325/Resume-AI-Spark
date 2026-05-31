@@ -39,6 +39,33 @@ const getFriendlyErrorMessage = (error: any): string => {
   return errMsg || "An unexpected error occurred while parsing the resume with Gemini AI.";
 };
 
+const extractName = (text: string): string => {
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  for (const line of lines.slice(0, 10)) {
+    if (line.includes("@") || line.includes("http") || line.includes("www") || line.includes(".com") || line.includes("|")) continue;
+    if (/[0-9]/.test(line) && line.length < 15) continue;
+    const cleanLine = line.replace(/^[•\-\*]\s*/, "").trim();
+    const words = cleanLine.split(/\s+/);
+    if (words.length >= 2 && words.length <= 4) {
+      const isCapitalized = words.every(w => /^[A-Z]/.test(w) || w.length === 1);
+      if (isCapitalized) return cleanLine;
+    }
+  }
+  return "";
+};
+
+const extractEmail = (text: string): string => {
+  const match = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  return match ? match[0] : "";
+};
+
+const extractPhone = (text: string): string => {
+  const match = text.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3,5}\)?[-.\s]?\d{3,5}[-.\s]?\d{4}/);
+  if (match) return match[0].trim();
+  const match2 = text.match(/\+?\d{10,13}/);
+  return match2 ? match2[0].trim() : "";
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AI Chat Proxy
 // ─────────────────────────────────────────────────────────────────────────────
@@ -324,29 +351,75 @@ MANDATORY RULES:
 
 Return ONLY the raw JSON. No markdown. No explanation. No \`\`\`json wrapper.`;
 
-    // ── 7. Call Gemini with the PDF bytes (native visual reading) ─────────────
-    const parts: any[] = [];
-    if (isPdf) {
-      parts.push({ inlineData: { mimeType: "application/pdf", data: req.file.buffer.toString("base64") } });
-    } else {
-      parts.push({ text: `RESUME CONTENT:\n${rawText}` });
+    let parsed: any = null;
+    try {
+      // ── 7. Call Gemini with the PDF bytes (native visual reading) ─────────────
+      const parts: any[] = [];
+      if (isPdf) {
+        parts.push({ inlineData: { mimeType: "application/pdf", data: req.file.buffer.toString("base64") } });
+      } else {
+        parts.push({ text: `RESUME CONTENT:\n${rawText}` });
+      }
+      parts.push({ text: prompt });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts }],
+        config: { temperature: 0.05 },
+      });
+
+      // ── 8. Parse Gemini response ───────────────────────────────────────────────
+      let jsonStr = (response.text ?? "{}").trim();
+      jsonStr = jsonStr.replace(/^```(?:json)?\s*/m, "").replace(/\s*```\s*$/m, "").trim();
+      const fb = jsonStr.indexOf("{");
+      const lb = jsonStr.lastIndexOf("}");
+      if (fb !== -1 && lb !== -1) jsonStr = jsonStr.substring(fb, lb + 1);
+
+      parsed = JSON.parse(jsonStr);
+      parsed.isFallback = false;
+    } catch (geminiError) {
+      console.warn("[ResumeParser] Gemini API failed. Falling back to local regex extraction:", geminiError);
+
+      const extractedName = extractName(rawText);
+      const extractedEmail = extractEmail(rawText);
+      const extractedPhone = extractPhone(rawText);
+
+      parsed = {
+        isFallback: true,
+        personalInfo: {
+          name: extractedName,
+          phone: extractedPhone,
+          email: extractedEmail,
+          github: githubProfile ?? "",
+          linkedin: linkedinProfile ?? "",
+          leetcode: leetcodeProfile ?? ""
+        },
+        professionalSummary: "",
+        education: [],
+        experience: [],
+        skills: [],
+        projects: [],
+        certifications: []
+      };
+
+      if (githubRepos.length > 0) {
+        parsed.projects = githubRepos.map((url, index) => {
+          const cleanUrl = url.replace(/\/+$/, "");
+          const parts = cleanUrl.split("/");
+          const repoName = parts[parts.length - 1] || `Project ${index + 1}`;
+          const prettyName = repoName.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+          return {
+            id: `proj-${index + 1}`,
+            title: prettyName,
+            year: new Date().getFullYear().toString(),
+            bullets: ["Imported repository url link from resume."],
+            techStack: [],
+            githubUrl: url,
+            liveUrl: ""
+          };
+        });
+      }
     }
-    parts.push({ text: prompt });
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts }],
-      config: { temperature: 0.05 },
-    });
-
-    // ── 8. Parse Gemini response ───────────────────────────────────────────────
-    let jsonStr = (response.text ?? "{}").trim();
-    jsonStr = jsonStr.replace(/^```(?:json)?\s*/m, "").replace(/\s*```\s*$/m, "").trim();
-    const fb = jsonStr.indexOf("{");
-    const lb = jsonStr.lastIndexOf("}");
-    if (fb !== -1 && lb !== -1) jsonStr = jsonStr.substring(fb, lb + 1);
-
-    const parsed = JSON.parse(jsonStr);
 
     // ── 9. Ensure https:// on all URL fields ──────────────────────────────────
     const toHttps = (url: string): string => {
