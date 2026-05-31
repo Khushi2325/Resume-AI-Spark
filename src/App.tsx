@@ -202,6 +202,10 @@ export default function App() {
   const [unlockCodeInput, setUnlockCodeInput] = useState("");
   const [unlockError, setUnlockError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [otpInput, setOtpInput] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   // -------------------------------------------------------------
@@ -760,18 +764,17 @@ export default function App() {
 
       if (data.session) {
         await loadSupabaseUser(data.user.id, data.user.email);
+        setShowAuthModal(false);
+        // Reset dynamic fields
+        setUsernameInput("");
+        setEmailInput("");
+        setPasswordInput("");
+        setAccessCodeInput("");
       } else {
-        setAuthError("Account created! Please check your email inbox to confirm your registration, or sign in if email confirmation is disabled.");
-        return;
+        setOtpEmail(emailVal);
+        setShowOtpVerification(true);
+        setAuthError("");
       }
-
-      setShowAuthModal(false);
-
-      // Reset dynamic fields
-      setUsernameInput("");
-      setEmailInput("");
-      setPasswordInput("");
-      setAccessCodeInput("");
     }
   };
 
@@ -862,6 +865,56 @@ export default function App() {
       setUnlockCodeInput("");
     }
     setIsUnlocking(false);
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    setIsVerifyingOtp(true);
+
+    const tokenVal = otpInput.trim();
+    if (!tokenVal) {
+      setAuthError("Verification code is required.");
+      setIsVerifyingOtp(false);
+      return;
+    }
+
+    if (!supabase) {
+      setAuthError("Supabase connection is offline.");
+      setIsVerifyingOtp(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: tokenVal,
+        type: "signup"
+      });
+
+      if (error || !data.user) {
+        throw new Error(error?.message || "Invalid or expired verification code.");
+      }
+
+      // Login succeeds! Load profile details
+      await loadSupabaseUser(data.user.id, data.user.email);
+      
+      // Reset inputs & close modal/view
+      setOtpInput("");
+      setOtpEmail("");
+      setShowOtpVerification(false);
+      setShowAuthModal(false);
+      
+      // Clean up signup fields
+      setUsernameInput("");
+      setEmailInput("");
+      setPasswordInput("");
+      setAccessCodeInput("");
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to verify. Please try again.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   // -------------------------------------------------------------
@@ -1344,8 +1397,82 @@ export default function App() {
             <div className={`p-6 sm:p-8 rounded-2xl border relative text-left w-full ${isDark ? "bg-zinc-900 border-zinc-800 shadow-2xl" : "bg-white/95 border-sky-100 shadow-[0_28px_80px_rgba(14,165,233,0.14)] text-slate-800"
               }`}>
 
-              {/* Tab Selector for Login/Register */}
-              <div className="flex justify-between items-center mb-6 border-b pb-4 border-sky-100 dark:border-zinc-800">
+              {showOtpVerification ? (
+                <div>
+                  <div className="text-center mb-6 relative">
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${
+                      isDark ? "bg-zinc-950 text-neutral-300 border-zinc-800" : "bg-slate-50 text-indigo-655 border-slate-205 shadow-2xs"
+                    }`}>
+                      <Mail size={18} className="stroke-[2.5]" />
+                    </div>
+                    <h2 className={`text-2xl font-black tracking-tight ${isDark ? "text-neutral-105" : "text-slate-950"}`}>
+                      Verify Your Email
+                    </h2>
+                    <p className={`text-xs mt-1 ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                      We have sent a 6-digit confirmation code to:
+                    </p>
+                    <p className="text-xs font-mono font-bold text-sky-500 mt-0.5 break-all">
+                      {otpEmail}
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                    {authError && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-650 font-medium">
+                        ⚠️ {authError}
+                      </div>
+                    )}
+
+                    <div className="space-y-1 text-left">
+                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
+                        Verification Code (OTP)
+                      </label>
+                      <input
+                        type="text"
+                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 text-center tracking-[0.5em] font-mono font-bold ${
+                          isDark
+                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
+                            : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
+                        }`}
+                        placeholder="000000"
+                        maxLength={6}
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ""))}
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isVerifyingOtp}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-950 font-extrabold text-sm py-3.5 rounded-xl shadow-lg shadow-sky-500/20 hover:shadow-xl cursor-pointer transition-all active:scale-98 mt-2 disabled:opacity-50"
+                    >
+                      <span>{isVerifyingOtp ? "Verifying..." : "Confirm Verification Code"}</span>
+                      <ArrowRight size={14} className="stroke-[2.5]" />
+                    </button>
+                  </form>
+
+                  <div className="mt-6 pt-4 border-t border-sky-100 dark:border-zinc-850 flex items-center justify-between text-xs">
+                    <span className={isDark ? "text-slate-450" : "text-slate-500"}>
+                      Entered wrong email?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowOtpVerification(false);
+                        setAuthError("");
+                        setOtpInput("");
+                      }}
+                      className="text-sky-600 font-extrabold hover:underline cursor-pointer"
+                    >
+                      Back to Register
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Tab Selector for Login/Register */}
+                  <div className="flex justify-between items-center mb-6 border-b pb-4 border-sky-100 dark:border-zinc-800">
                 <div>
                   <h2 className={`text-2xl font-black tracking-tight ${isDark ? "text-neutral-100" : "text-slate-950"}`}>
                     {authMode === "login" ? "Account Sign In" : "Register Profile"}
@@ -1522,7 +1649,9 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            </div>
+            </>
+          )}
+        </div>
           </div>
         </main>
 
@@ -2706,7 +2835,81 @@ export default function App() {
 
               <div className={`p-6 sm:p-8 rounded-3xl border shadow-lg relative text-left ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white/95 backdrop-blur-md border-white/60 shadow-[0_10px_40px_rgba(99,102,241,0.04)]"
                 }`}>
-                <div className="text-center mb-6 relative">
+                {showOtpVerification ? (
+                  <div>
+                    <div className="text-center mb-6 relative">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${
+                        isDark ? "bg-zinc-950 text-neutral-300 border-zinc-800" : "bg-slate-50 text-indigo-655 border-slate-205 shadow-2xs"
+                      }`}>
+                        <Mail size={18} className="stroke-[2.5]" />
+                      </div>
+                      <h2 className={`text-xl font-bold tracking-tight ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
+                        Verify Your Email
+                      </h2>
+                      <p className={`text-xs mt-1 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
+                        We have sent a 6-digit confirmation code to:
+                      </p>
+                      <p className="text-xs font-mono font-bold text-sky-500 mt-0.5 break-all">
+                        {otpEmail}
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleVerifyOtp} className="space-y-4">
+                      {authError && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-650 font-medium">
+                          ⚠️ {authError}
+                        </div>
+                      )}
+
+                      <div className="space-y-1 text-left">
+                        <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                          Verification Code (OTP)
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-455 text-center tracking-[0.5em] font-mono font-bold ${
+                            isDark
+                              ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
+                              : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
+                          }`}
+                          placeholder="000000"
+                          maxLength={6}
+                          value={otpInput}
+                          onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ""))}
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isVerifyingOtp}
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-950 font-bold text-xs py-3 rounded-xl shadow-md shadow-sky-600/15 hover:shadow-lg cursor-pointer transition-all active:scale-98 mt-2 disabled:opacity-50"
+                      >
+                        <span>{isVerifyingOtp ? "Verifying..." : "Confirm Verification Code"}</span>
+                        <ArrowRight size={14} className="stroke-[2.5]" />
+                      </button>
+                    </form>
+
+                    <div className="mt-6 pt-4 border-t border-sky-500/10 flex items-center justify-between text-xs">
+                      <span className={isDark ? "text-slate-400" : "text-slate-500"}>
+                        Entered wrong email?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOtpVerification(false);
+                          setAuthError("");
+                          setOtpInput("");
+                        }}
+                        className="text-sky-405 font-extrabold hover:underline cursor-pointer"
+                      >
+                        Back to Register
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-center mb-6 relative">
                   <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${isDark ? "bg-zinc-950 text-neutral-300 border-zinc-800" : "bg-slate-50 text-indigo-655 border-slate-205 shadow-2xs"
                     }`}>
                     <Lock size={18} className="stroke-[2.5]" />
@@ -2888,6 +3091,8 @@ export default function App() {
                     {authMode === "login" ? "Create Custom Profile" : "Sign In to Existing"}
                   </button>
                 </div>
+                  </>
+                )}
               </div>
 
             </div>
