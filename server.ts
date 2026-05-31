@@ -87,6 +87,19 @@ CRITICAL TONE & CONVERSATIONAL RULES (STRICT COMPLIANCE REQUIRED):
   }
 });
 
+// Setup self-ping to prevent Render from putting the free tier to sleep (10 min interval)
+app.get("/api/ping", (req, res) => {
+  res.status(200).send("pong");
+});
+
+const PING_INTERVAL = 10 * 60 * 1000;
+setInterval(() => {
+  const url = process.env.APP_URL || "https://resume-ai-spark.onrender.com";
+  fetch(`${url}/api/ping`)
+    .then(res => console.log(`[Self-Ping] Successfully pinged ${url} to keep server awake (Status: ${res.status})`))
+    .catch(err => console.error(`[Self-Ping] Failed to ping ${url}:`, err.message));
+}, PING_INTERVAL);
+
 // Setup Vite & Static Handlers
 const startServer = async () => {
   if (process.env.NODE_ENV !== "production") {
