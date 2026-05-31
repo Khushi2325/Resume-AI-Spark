@@ -16,6 +16,29 @@ const ai = new GoogleGenAI({
   httpOptions: { headers: { "User-Agent": "aistudio-build" } },
 });
 
+const getFriendlyErrorMessage = (error: any): string => {
+  const errMsg = error?.message || String(error);
+  
+  if (errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("Quota exceeded")) {
+    return "The AI parser is temporarily busy due to Google API rate limits. Please wait a few seconds and try uploading again.";
+  }
+  
+  if (errMsg.includes("API_KEY_INVALID") || errMsg.includes("api key") || errMsg.includes("not valid")) {
+    return "The configured Gemini API key is invalid or expired. Please check your .env configuration.";
+  }
+
+  try {
+    const parsed = JSON.parse(errMsg);
+    if (parsed?.error?.message) {
+      return parsed.error.message;
+    }
+  } catch {
+    // Ignore JSON parsing failure
+  }
+
+  return errMsg || "An unexpected error occurred while parsing the resume with Gemini AI.";
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AI Chat Proxy
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,7 +95,7 @@ CRITICAL TONE & CONVERSATIONAL RULES (STRICT COMPLIANCE REQUIRED):
     res.json({ text: response.text });
   } catch (error: any) {
     console.error("Gemini Chat API Error:", error);
-    res.status(500).json({ error: error?.message || "An error occurred while communicating with the AI Assistant." });
+    res.status(500).json({ error: getFriendlyErrorMessage(error) });
   }
 });
 
@@ -355,7 +378,7 @@ Return ONLY the raw JSON. No markdown. No explanation. No \`\`\`json wrapper.`;
     res.json(parsed);
   } catch (error: any) {
     console.error("Parse Resume Error:", error);
-    res.status(500).json({ error: error?.message ?? "Failed to parse resume." });
+    res.status(500).json({ error: getFriendlyErrorMessage(error) });
   }
 });
 
