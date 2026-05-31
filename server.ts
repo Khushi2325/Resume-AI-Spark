@@ -66,6 +66,574 @@ const extractPhone = (text: string): string => {
   return match2 ? match2[0].trim() : "";
 };
 
+interface ResumeData {
+  isFallback: boolean;
+  personalInfo: {
+    name: string;
+    phone: string;
+    email: string;
+    github: string;
+    linkedin: string;
+    leetcode: string;
+  };
+  professionalSummary: string;
+  education: Array<{
+    id: string;
+    institution: string;
+    years: string;
+    degree: string;
+    location: string;
+  }>;
+  experience: Array<{
+    id: string;
+    company: string;
+    role: string;
+    duration: string;
+    location: string;
+    bullets: string[];
+  }>;
+  skills: Array<{
+    id: string;
+    category: string;
+    skills: string[];
+  }>;
+  projects: Array<{
+    id: string;
+    title: string;
+    year: string;
+    bullets: string[];
+    techStack: string[];
+    githubUrl: string;
+    liveUrl: string;
+  }>;
+  certifications: Array<{
+    id: string;
+    title: string;
+    issuer: string;
+    year: string;
+    bullets: string[];
+    certificateUrl: string;
+    badgeUrl: string;
+  }>;
+}
+
+const cleanMarkdownLinks = (text: string): { cleanText: string; urls: string[] } => {
+  const urls: string[] = [];
+  const cleanText = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+    urls.push(url.trim());
+    return linkText;
+  });
+  return { cleanText, urls };
+};
+
+const normalizeHeader = (text: string): string => {
+  return text.toLowerCase()
+    .replace(/[&:\(\)]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const isFooterOrNoise = (line: string): boolean => {
+  const clean = line.trim();
+  if (!clean) return true;
+  if (/^--\s*\d+\s*of\s*\d+\s*--$/i.test(clean)) return true;
+  if (/^page\s*\d+\s*of\s*\d+$/i.test(clean)) return true;
+  if (/^\d+\s*\/\s*\d+$/i.test(clean)) return true;
+  return false;
+};
+
+function parseResumeLocally(rawText: string, allUrls: string[]): ResumeData {
+  const lines = rawText.split("\n").map(l => l.trim()).filter(Boolean);
+
+  // 1. Identify section boundaries
+  const headers = {
+    summary: ["summary", "objective", "professional summary", "about", "about me", "profile"],
+    education: ["education", "academic background", "academics"],
+    experience: ["experience", "work experience", "employment", "professional experience", "work history"],
+    skills: ["skills", "technical skills", "key skills", "languages and tools", "technical expertise"],
+    projects: ["projects", "personal projects", "academic projects", "key projects"],
+    certifications: ["certifications", "achievements", "awards", "certifications achievements", "certificates"]
+  };
+
+  const sectionStarts: Array<{ section: string; index: number }> = [];
+  for (let i = 0; i < lines.length; i++) {
+    const lineNorm = normalizeHeader(lines[i]);
+    
+    // Check if the line matches any section headers exactly
+    let matchedSection: string | null = null;
+    for (const [section, keywords] of Object.entries(headers)) {
+      if (keywords.includes(lineNorm)) {
+        matchedSection = section;
+        break;
+      }
+    }
+
+    if (matchedSection) {
+      sectionStarts.push({ section: matchedSection, index: i });
+    }
+  }
+
+  // Sort starts by index
+  sectionStarts.sort((a, b) => a.index - b.index);
+
+  // Get lines for a specific section
+  const getSectionLines = (sectionName: string): string[] => {
+    const startIdx = sectionStarts.findIndex(s => s.section === sectionName);
+    if (startIdx === -1) return [];
+    
+    const start = sectionStarts[startIdx].index + 1;
+    const end = startIdx + 1 < sectionStarts.length ? sectionStarts[startIdx + 1].index : lines.length;
+    return lines.slice(start, end);
+  };
+
+  // 2. Parse Profile URL links
+  const getPath = (url: string, domain: string): string => {
+    const after = url.toLowerCase().split(domain)[1] ?? "";
+    return after.replace(/^\//, "");
+  };
+
+  // Extract from markdown links first
+  const mdUrls: string[] = [];
+  rawText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+    mdUrls.push(url.trim());
+    return linkText;
+  });
+
+  const mergedUrls = [...new Set([...allUrls, ...mdUrls])];
+
+  let githubProfile = mergedUrls.find((u) => {
+    if (!u.includes("github.com")) return false;
+    const path = getPath(u, "github.com");
+    return path.length >= 2 && !path.includes("/");
+  });
+  if (!githubProfile) {
+    const tm = rawText.match(/github\.com\/([a-zA-Z0-9_-]{2,39})(?![/\w])/i);
+    if (tm) githubProfile = `https://github.com/${tm[1]}`;
+  }
+
+  const githubRepos = mergedUrls.filter((u) => {
+    if (!u.includes("github.com")) return false;
+    const path = getPath(u, "github.com");
+    return path.includes("/") && path.split("/").filter(Boolean).length >= 2;
+  });
+
+  let linkedinProfile = mergedUrls.find((u) => u.includes("linkedin.com/in/"));
+  if (!linkedinProfile) {
+    linkedinProfile = mergedUrls.find((u) => {
+      if (!u.includes("linkedin.com")) return false;
+      return getPath(u, "linkedin.com").length >= 2;
+    });
+  }
+  if (!linkedinProfile) {
+    const tm = rawText.match(/linkedin\.com\/(in\/[a-zA-Z0-9_-]+)/i);
+    if (tm) linkedinProfile = `https://www.linkedin.com/${tm[1]}`;
+  }
+
+  let leetcodeProfile = mergedUrls.find((u) => {
+    if (!u.includes("leetcode.com")) return false;
+    return getPath(u, "leetcode.com").length >= 2;
+  });
+  if (!leetcodeProfile) {
+    const tm = rawText.match(/leetcode\.com\/(?:u\/)?([a-zA-Z0-9_-]{2,})/i);
+    if (tm) leetcodeProfile = `https://leetcode.com/${tm[1]}`;
+  }
+
+  // 3. Parse Summary Section
+  const summaryLines = getSectionLines("summary")
+    .filter(l => !isFooterOrNoise(l))
+    .map(l => cleanMarkdownLinks(l).cleanText);
+  const professionalSummary = summaryLines.join(" ");
+
+  // 4. Parse Education Section
+  const eduLines = getSectionLines("education").filter(l => !isFooterOrNoise(l));
+  const education: ResumeData["education"] = [];
+  let eduId = 1;
+  
+  // Date range regex matching: "2023 – Present", "MAR-2023", "March 2023", etc.
+  const dateRangeRegex = /\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-–\s\d]*)?\b(19|20)\d{2}\s*(?:–|-|to)?\s*(?:Present|\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-–\s]*)?\b(19|20)\d{2})?\b/i;
+
+  for (let i = 0; i < eduLines.length; i++) {
+    const line = eduLines[i];
+    const yearMatch = line.match(dateRangeRegex);
+    
+    if (yearMatch) {
+      const year = yearMatch[0].trim();
+      // Clean institution: remove year/date part, and any trailing dashes, commas, spaces
+      let inst = line.replace(yearMatch[0], "")
+        .replace(/[,-\s–]+$/, "")
+        .trim();
+      
+      const { cleanText: cleanInst } = cleanMarkdownLinks(inst);
+      
+      // Look at next lines to find degree and location
+      let degree = "";
+      let location = "";
+      
+      if (i + 1 < eduLines.length) {
+        const nextLine = eduLines[i + 1];
+        const nextLineHasYear = nextLine.match(dateRangeRegex);
+        const nextLineNorm = normalizeHeader(nextLine);
+        
+        // If the next line doesn't start another section or have a year, it's part of this education entry
+        let isSectionHeader = false;
+        for (const keywords of Object.values(headers)) {
+          if (keywords.includes(nextLineNorm)) {
+            isSectionHeader = true;
+            break;
+          }
+        }
+
+        if (!nextLineHasYear && !isSectionHeader) {
+          const { cleanText: cleanDegree } = cleanMarkdownLinks(nextLine);
+          degree = cleanDegree;
+          
+          // Check if there is location on the right side of degree or institution
+          const rightPartMatch = cleanDegree.match(/\s{2,}([a-zA-Z\s,]+)$/);
+          if (rightPartMatch) {
+            location = rightPartMatch[1].trim();
+            degree = cleanDegree.replace(rightPartMatch[0], "").trim();
+          }
+          i++;
+        }
+      }
+      
+      education.push({
+        id: `edu-${eduId++}`,
+        institution: cleanInst,
+        years: year,
+        degree: degree,
+        location: location
+      });
+    }
+  }
+
+  // 5. Parse Skills Section
+  const skillLines = getSectionLines("skills").filter(l => !isFooterOrNoise(l));
+  const skills: ResumeData["skills"] = [];
+  let skillId = 1;
+
+  for (const line of skillLines) {
+    const { cleanText: cleanLine } = cleanMarkdownLinks(line);
+    let cat = "";
+    let listStr = "";
+    
+    if (cleanLine.includes(":")) {
+      const parts = cleanLine.split(":");
+      cat = parts[0].trim();
+      listStr = parts.slice(1).join(":").trim();
+    } else if (cleanLine.includes(" - ")) {
+      const parts = cleanLine.split(" - ");
+      cat = parts[0].trim();
+      listStr = parts.slice(1).join(" - ").trim();
+    } else {
+      // No separator, put all under a generic category or skip if it's too short
+      if (cleanLine.length > 5) {
+        cat = "Skills";
+        listStr = cleanLine;
+      }
+    }
+    
+    if (cat && listStr) {
+      const list = listStr.split(",").map(s => s.trim()).filter(Boolean);
+      
+      // Filter out noise
+      if (cat.toLowerCase().includes("profile") || cat.toLowerCase().includes("certificate")) {
+        continue;
+      }
+      
+      // Check if this category already exists
+      const existing = skills.find(s => s.category.toLowerCase() === cat.toLowerCase());
+      if (existing) {
+        existing.skills = [...new Set([...existing.skills, ...list])];
+      } else {
+        skills.push({
+          id: `skill-${skillId++}`,
+          category: cat,
+          skills: list
+        });
+      }
+    }
+  }
+
+  // 6. Parse Projects Section
+  const projLines = getSectionLines("projects").filter(l => !isFooterOrNoise(l));
+  const projects: ResumeData["projects"] = [];
+  let projId = 1;
+  let currentProj: any = null;
+
+  for (let i = 0; i < projLines.length; i++) {
+    const line = projLines[i];
+    
+    // Check if line contains a year
+    const yearMatch = line.match(/\b(19|20)\d{2}\b/);
+    const isBullet = line.startsWith("•") || line.startsWith("-") || line.startsWith("–") || line.startsWith("*");
+    const isLinkLine = line.toLowerCase().includes("github:") || line.toLowerCase().includes("live:") || 
+                       line.toLowerCase().includes("website:") || line.toLowerCase().includes("repository:") ||
+                       line.toLowerCase().includes("live website:");
+
+    // If it contains a year and is not a bullet point or link line, it's a project header!
+    if (yearMatch && !isBullet && !isLinkLine) {
+      if (currentProj) {
+        projects.push(currentProj);
+      }
+      
+      const year = yearMatch[0];
+      let title = line.replace(year, "")
+        .replace(/[,-\s–]+$/, "")
+        .trim();
+      
+      const { cleanText: cleanTitle } = cleanMarkdownLinks(title);
+      
+      currentProj = {
+        id: `proj-${projId++}`,
+        title: cleanTitle,
+        year: year,
+        bullets: [],
+        techStack: [],
+        githubUrl: "",
+        liveUrl: ""
+      };
+    } else if (currentProj) {
+      const { cleanText, urls } = cleanMarkdownLinks(line);
+      
+      // Check if there are markdown links
+      if (urls.length > 0) {
+        for (const u of urls) {
+          if (u.includes("github.com")) {
+            currentProj.githubUrl = u;
+          } else {
+            currentProj.liveUrl = u;
+          }
+        }
+      }
+      
+      if (isLinkLine) {
+        // Skip adding the link indicator text as a bullet
+        continue;
+      }
+      
+      // Add as bullet point
+      const bulletText = cleanText.replace(/^[•\-\*]\s*/, "").trim();
+      if (bulletText) {
+        currentProj.bullets.push(bulletText);
+
+        // Extract tech stack from bullet points
+        const knownTech = ["React", "Node.js", "Express", "Python", "Java", "NLP", "OpenCV", "TensorFlow", "MongoDB", "PostgreSQL", "HTML", "CSS", "JavaScript"];
+        for (const tech of knownTech) {
+          const regex = new RegExp(`\\b${tech}\\b`, "i");
+          if (regex.test(bulletText) && !currentProj.techStack.includes(tech)) {
+            currentProj.techStack.push(tech);
+          }
+        }
+      }
+    }
+  }
+  
+  if (currentProj) {
+    projects.push(currentProj);
+  }
+
+  // Assign project github/live URLs from allUrls if not found directly
+  for (const proj of projects) {
+    if (!proj.githubUrl) {
+      const cleanTitle = proj.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+      for (const url of githubRepos) {
+        const parts = url.toLowerCase().split("/");
+        const repoName = (parts[parts.length - 1] ?? "").replace(/[^a-z0-9]/g, "");
+        if (cleanTitle.includes(repoName) || repoName.includes(cleanTitle)) {
+          proj.githubUrl = url;
+          break;
+        }
+      }
+    }
+  }
+
+  // 7. Parse Experience Section
+  const expLines = getSectionLines("experience").filter(l => !isFooterOrNoise(l));
+  const experience: ResumeData["experience"] = [];
+  let expId = 1;
+  let currentExp: any = null;
+
+  for (let i = 0; i < expLines.length; i++) {
+    const line = expLines[i];
+    const isBullet = line.startsWith("•") || line.startsWith("-") || line.startsWith("–") || line.startsWith("*");
+    const yearMatch = line.match(dateRangeRegex);
+    
+    if (yearMatch && !isBullet) {
+      if (currentExp) {
+        experience.push(currentExp);
+      }
+      
+      const duration = yearMatch[0].trim();
+      let company = line.replace(yearMatch[0], "")
+        .replace(/[,-\s–]+$/, "")
+        .trim();
+      
+      const { cleanText: cleanCompany } = cleanMarkdownLinks(company);
+      
+      currentExp = {
+        id: `exp-${expId++}`,
+        company: cleanCompany,
+        role: "",
+        duration: duration,
+        location: "",
+        bullets: []
+      };
+      
+      if (i + 1 < expLines.length) {
+        const nextLine = expLines[i + 1];
+        const nextLineHasYear = nextLine.match(dateRangeRegex);
+        
+        if (!nextLine.startsWith("•") && !nextLine.startsWith("-") && !nextLineHasYear) {
+          const { cleanText: cleanRole } = cleanMarkdownLinks(nextLine);
+          currentExp.role = cleanRole;
+          const rightPartMatch = cleanRole.match(/\s{2,}([a-zA-Z\s,]+)$/);
+          if (rightPartMatch) {
+            currentExp.location = rightPartMatch[1].trim();
+            currentExp.role = cleanRole.replace(rightPartMatch[0], "").trim();
+          }
+          i++;
+        }
+      }
+    } else if (currentExp) {
+      const { cleanText } = cleanMarkdownLinks(line);
+      const bulletText = cleanText.replace(/^[•\-\*]\s*/, "").trim();
+      if (bulletText) currentExp.bullets.push(bulletText);
+    }
+  }
+  if (currentExp) {
+    experience.push(currentExp);
+  }
+
+  // 8. Parse Certifications Section
+  const certLines = getSectionLines("certifications").filter(l => !isFooterOrNoise(l));
+  const certifications: ResumeData["certifications"] = [];
+  let certId = 1;
+  let currentCert: any = null;
+  let wasPrevLink = false;
+
+  for (let i = 0; i < certLines.length; i++) {
+    const line = certLines[i];
+    const isBullet = line.startsWith("•") || line.startsWith("-") || line.startsWith("–") || line.startsWith("*");
+    const { cleanText: cleanLine, urls } = cleanMarkdownLinks(line);
+    
+    const isLinkLine = cleanLine.toLowerCase().startsWith("view certificate") || 
+                       cleanLine.toLowerCase().startsWith("view badge") || 
+                       cleanLine.toLowerCase().startsWith("profile:") || 
+                       cleanLine.toLowerCase().startsWith("certificate:") ||
+                       cleanLine.toLowerCase().startsWith("badge:") ||
+                       urls.length > 0;
+                       
+    const yearMatch = cleanLine.match(/\b(19|20)\d{2}\b/);
+    
+    // We start a new cert if it's a new entry (not bullet, not link, and either has year, no currentCert, or previous line was link line)
+    if (!isBullet && !isLinkLine && (yearMatch || !currentCert || wasPrevLink)) {
+      if (currentCert) {
+        certifications.push(currentCert);
+      }
+      
+      let title = cleanLine;
+      let year = "";
+      if (yearMatch) {
+        year = yearMatch[0];
+        title = cleanLine.replace(year, "")
+          .replace(/[,-\s–]+$/, "")
+          .trim();
+      }
+      
+      currentCert = {
+        id: `cert-${certId++}`,
+        title: title,
+        issuer: "",
+        year: year,
+        bullets: [],
+        certificateUrl: "",
+        badgeUrl: ""
+      };
+      
+      if (title.includes(" — ")) {
+        const parts = title.split(" — ");
+        currentCert.title = parts[0].trim();
+        currentCert.issuer = parts[1].trim();
+      } else if (title.includes(" - ")) {
+        const parts = title.split(" - ");
+        currentCert.title = parts[0].trim();
+        currentCert.issuer = parts[1].trim();
+      }
+      wasPrevLink = false;
+    } else if (currentCert) {
+      if (isLinkLine) {
+        wasPrevLink = true;
+        currentCert._linkText = (currentCert._linkText || "") + " " + cleanLine;
+        for (const u of urls) {
+          if (u.includes("credly")) {
+            currentCert.badgeUrl = u;
+          } else {
+            currentCert.certificateUrl = u;
+          }
+        }
+      } else {
+        wasPrevLink = false;
+        const bulletText = cleanLine.replace(/^[•\-\*]\s*/, "").trim();
+        if (bulletText) currentCert.bullets.push(bulletText);
+      }
+    }
+  }
+  if (currentCert) {
+    certifications.push(currentCert);
+  }
+
+  // Fallback certification URL mapping from allUrls
+  const assignedUrls = new Set<string>();
+  for (const proj of projects) {
+    if (proj.githubUrl) assignedUrls.add(proj.githubUrl);
+    if (proj.liveUrl) assignedUrls.add(proj.liveUrl);
+  }
+  for (const cert of certifications) {
+    if (cert.certificateUrl) assignedUrls.add(cert.certificateUrl);
+    if (cert.badgeUrl) assignedUrls.add(cert.badgeUrl);
+  }
+
+  const findUnassignedUrl = (predicate: (u: string) => boolean): string => {
+    const found = mergedUrls.find(u => !assignedUrls.has(u) && predicate(u));
+    if (found) {
+      assignedUrls.add(found);
+    }
+    return found || "";
+  };
+
+  for (const cert of certifications) {
+    const certRawText = (cert.title + " " + cert.bullets.join(" ") + " " + (cert._linkText || "")).toLowerCase();
+    
+    if (!cert.badgeUrl && certRawText.includes("badge")) {
+      cert.badgeUrl = findUnassignedUrl(u => u.includes("credly") || u.includes("badge"));
+    }
+    if (!cert.certificateUrl && (certRawText.includes("certificate") || certRawText.includes("cert"))) {
+      cert.certificateUrl = findUnassignedUrl(u => u.includes("drive.google") || u.includes("drive") || u.includes("cert"));
+    }
+    
+    delete cert._linkText;
+  }
+
+  return {
+    isFallback: false,
+    personalInfo: {
+      name: extractName(rawText),
+      phone: extractPhone(rawText),
+      email: extractEmail(rawText),
+      github: githubProfile ?? "",
+      linkedin: linkedinProfile ?? "",
+      leetcode: leetcodeProfile ?? ""
+    },
+    professionalSummary,
+    education,
+    experience,
+    skills,
+    projects,
+    certifications
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AI Chat Proxy
 // ─────────────────────────────────────────────────────────────────────────────
@@ -227,199 +795,7 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
     const allUrls = [...new Set([...annotationUrls, ...textUrls].map((u) => u.trim()).filter(Boolean))];
     console.log("[ResumeParser] Extracted URLs from PDF:", allUrls);
 
-    // ── 5. Extract profile URLs from text when annotations only give base domains ───
-    // PDFs sometimes store icon links with only the base domain (e.g. https://github.com/)
-    // In that case, we try to extract the full profile path from the visible PDF text.
-    const getPath = (url: string, domain: string): string => {
-      const after = url.toLowerCase().split(domain)[1] ?? "";
-      return after.replace(/^\//, ""); // strip leading slash
-    };
-
-    // GitHub: prefer github.com/username (1 path segment, at least 2 chars)
-    let githubProfile = allUrls.find((u) => {
-      if (!u.includes("github.com")) return false;
-      const path = getPath(u, "github.com");
-      return path.length >= 2 && !path.includes("/"); // exactly 1 segment = profile
-    });
-    // Fallback: extract from raw text (e.g. visible text "github.com/Khushi2325")
-    if (!githubProfile) {
-      const tm = rawText.match(/github\.com\/([a-zA-Z0-9_-]{2,39})(?![/\w])/i);
-      if (tm) githubProfile = `https://github.com/${tm[1]}`;
-    }
-    // GitHub repo URLs (2 path segments = github.com/user/repo)
-    const githubRepos = allUrls.filter((u) => {
-      if (!u.includes("github.com")) return false;
-      const path = getPath(u, "github.com");
-      return path.includes("/") && path.split("/").filter(Boolean).length >= 2;
-    });
-
-    // LinkedIn: prefer linkedin.com/in/... (has /in/ path)
-    let linkedinProfile = allUrls.find((u) => u.includes("linkedin.com/in/"));
-    if (!linkedinProfile) {
-      linkedinProfile = allUrls.find((u) => {
-        if (!u.includes("linkedin.com")) return false;
-        return getPath(u, "linkedin.com").length >= 2;
-      });
-    }
-    // Fallback: extract from raw text
-    if (!linkedinProfile) {
-      const tm = rawText.match(/linkedin\.com\/(in\/[a-zA-Z0-9_-]+)/i);
-      if (tm) linkedinProfile = `https://www.linkedin.com/${tm[1]}`;
-    }
-
-    // LeetCode: leetcode.com/u/username or leetcode.com/username
-    let leetcodeProfile = allUrls.find((u) => {
-      if (!u.includes("leetcode.com")) return false;
-      return getPath(u, "leetcode.com").length >= 2;
-    });
-    if (!leetcodeProfile) {
-      const tm = rawText.match(/leetcode\.com\/(?:u\/)?([a-zA-Z0-9_-]{2,})/i);
-      if (tm) leetcodeProfile = `https://leetcode.com/${tm[1]}`;
-    }
-
-    // Live/cert links (unchanged)
-    const liveLinks = allUrls.filter((u) =>
-      u.includes("vercel.app") || u.includes("netlify.app") ||
-      u.includes("railway.app") || u.includes("render.com") || u.includes("herokuapp.com")
-    );
-    const certLinks = allUrls.filter((u) =>
-      u.includes("credly") || u.includes("coursera") ||
-      u.includes("udemy") || u.includes("hackerrank") || u.includes("drive.google")
-    );
-
-    console.log("[ResumeParser] Profile URLs resolved:", { githubProfile, linkedinProfile, leetcodeProfile });
-    console.log("[ResumeParser] Repo URLs:", githubRepos);
-
-    // ── 6. Build smart URL hint for Gemini ────────────────────────────────────
-    let urlHint = "";
-    const hintParts: string[] = [];
-    if (githubProfile)  hintParts.push(`GITHUB PROFILE:\n  → ${githubProfile}\n  Put in: personalInfo.github`);
-    if (githubRepos.length) hintParts.push(`GITHUB REPO LINKS (${githubRepos.length} found — assign each to the matching project):\n${githubRepos.map((u) => `  → ${u}`).join("\n")}\n  Put in: projects[matching project by name].githubUrl`);
-    if (linkedinProfile) hintParts.push(`LINKEDIN PROFILE:\n  → ${linkedinProfile}\n  Put in: personalInfo.linkedin`);
-    if (leetcodeProfile) hintParts.push(`LEETCODE PROFILE:\n  → ${leetcodeProfile}\n  Put in: personalInfo.leetcode`);
-    if (liveLinks.length) hintParts.push(`LIVE/DEMO SITE LINKS:\n${liveLinks.map((u) => `  → ${u}`).join("\n")}\n  Put in: projects[matching project by name].liveUrl`);
-    if (certLinks.length) hintParts.push(`CERTIFICATE LINKS:\n${certLinks.map((u) => `  → ${u}`).join("\n")}\n  Put in: certifications[matching cert].certificateUrl`);
-
-    if (hintParts.length > 0) {
-      urlHint = `=== HYPERLINKS EXTRACTED FROM PDF (MUST USE ALL OF THESE) ===\n\n${hintParts.join("\n\n")}\n\n=== END HYPERLINKS ===`;
-    }
-
-    // ── 7. Build the extraction prompt ────────────────────────────────────────
-    const prompt = `You are a world-class resume parser. Extract ALL information from this resume and return ONLY a valid JSON object.
-
-${urlHint}
-
-Return this EXACT JSON structure. Fill every field from the actual resume content:
-{
-  "personalInfo": {
-    "name": "",
-    "phone": "",
-    "email": "",
-    "github": "${githubProfile ?? ""}",
-    "linkedin": "${linkedinProfile ?? ""}",
-    "leetcode": "${leetcodeProfile ?? ""}"
-  },
-  "professionalSummary": "",
-  "education": [
-    { "id": "edu-1", "institution": "", "years": "", "degree": "", "location": "" }
-  ],
-  "experience": [
-    { "id": "exp-1", "company": "", "role": "", "duration": "", "location": "", "bullets": [] }
-  ],
-  "skills": [
-    { "id": "skill-1", "category": "Languages", "skills": [] }
-  ],
-  "projects": [
-    { "id": "proj-1", "title": "", "year": "", "bullets": [], "techStack": [], "githubUrl": "", "liveUrl": "" }
-  ],
-  "certifications": [
-    { "id": "cert-1", "title": "", "issuer": "", "year": "", "bullets": [], "certificateUrl": "", "badgeUrl": "" }
-  ]
-}
-
-MANDATORY RULES:
-1. Fill ALL fields from the actual resume content — do not leave anything empty if it exists in the document
-2. The github/linkedin/leetcode fields above are pre-filled with the best URL found — keep them EXACTLY as shown unless you find a more complete URL in the document text
-3. For project githubUrl: match each GitHub repo link from the HYPERLINKS section above to the correct project by comparing the repo name to the project title
-4. For project liveUrl: match each live site link to the correct project similarly
-5. All URLs must start with https:// — add prefix if missing
-6. Use "" for missing strings, [] for missing arrays
-7. Extract ALL experience entries (internships, part-time, full-time, freelance) — do NOT skip any
-8. Each bullet point = separate string in the array
-9. techStack = array of individual technology names (not one long string)
-10. Group skills by category (Languages, Backend, Frontend, Tools, etc.)
-
-Return ONLY the raw JSON. No markdown. No explanation. No \`\`\`json wrapper.`;
-
-    let parsed: any = null;
-    try {
-      // ── 7. Call Gemini with the PDF bytes (native visual reading) ─────────────
-      const parts: any[] = [];
-      if (isPdf) {
-        parts.push({ inlineData: { mimeType: "application/pdf", data: req.file.buffer.toString("base64") } });
-      } else {
-        parts.push({ text: `RESUME CONTENT:\n${rawText}` });
-      }
-      parts.push({ text: prompt });
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts }],
-        config: { temperature: 0.05 },
-      });
-
-      // ── 8. Parse Gemini response ───────────────────────────────────────────────
-      let jsonStr = (response.text ?? "{}").trim();
-      jsonStr = jsonStr.replace(/^```(?:json)?\s*/m, "").replace(/\s*```\s*$/m, "").trim();
-      const fb = jsonStr.indexOf("{");
-      const lb = jsonStr.lastIndexOf("}");
-      if (fb !== -1 && lb !== -1) jsonStr = jsonStr.substring(fb, lb + 1);
-
-      parsed = JSON.parse(jsonStr);
-      parsed.isFallback = false;
-    } catch (geminiError) {
-      console.warn("[ResumeParser] Gemini API failed. Falling back to local regex extraction:", geminiError);
-
-      const extractedName = extractName(rawText);
-      const extractedEmail = extractEmail(rawText);
-      const extractedPhone = extractPhone(rawText);
-
-      parsed = {
-        isFallback: true,
-        personalInfo: {
-          name: extractedName,
-          phone: extractedPhone,
-          email: extractedEmail,
-          github: githubProfile ?? "",
-          linkedin: linkedinProfile ?? "",
-          leetcode: leetcodeProfile ?? ""
-        },
-        professionalSummary: "",
-        education: [],
-        experience: [],
-        skills: [],
-        projects: [],
-        certifications: []
-      };
-
-      if (githubRepos.length > 0) {
-        parsed.projects = githubRepos.map((url, index) => {
-          const cleanUrl = url.replace(/\/+$/, "");
-          const parts = cleanUrl.split("/");
-          const repoName = parts[parts.length - 1] || `Project ${index + 1}`;
-          const prettyName = repoName.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-          return {
-            id: `proj-${index + 1}`,
-            title: prettyName,
-            year: new Date().getFullYear().toString(),
-            bullets: ["Imported repository url link from resume."],
-            techStack: [],
-            githubUrl: url,
-            liveUrl: ""
-          };
-        });
-      }
-    }
+    const parsed = parseResumeLocally(rawText, allUrls);
 
     // ── 9. Ensure https:// on all URL fields ──────────────────────────────────
     const toHttps = (url: string): string => {

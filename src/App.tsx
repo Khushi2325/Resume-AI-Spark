@@ -568,11 +568,7 @@ export default function App() {
         if (json.personalInfo) {
           if (!json.experience) json.experience = [];
           saveUserResume(json);
-          if ((json as any).isFallback) {
-            alert("Local Fallback Active: We successfully extracted your contact details, social profiles, and project links locally! However, Gemini AI is temporarily rate-limited, so sections like work experience, education, and skills could not be fully parsed. You can edit them manually or try re-uploading in a minute.");
-          } else {
-            alert("Resume AI parsing complete! Your details have been imported.");
-          }
+          alert("Resume parsed successfully! Your details have been imported.");
         }
       } catch (err: any) {
         alert("Error parsing resume: " + err.message);
