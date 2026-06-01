@@ -1,30 +1,35 @@
-# ⚡ Resume AI Spark
+<div align="center">
+  <img src="app-icon.svg" alt="Resume AI Spark Logo" width="120" />
+  <h1>Resume AI Spark</h1>
+</div>
 
-**Resume AI Spark** is an elite, interactive CV ecosystem designed specifically to help software engineers, developers, and tech professionals craft resumes that land top roles. 
+Resume AI Spark is an interactive resume builder designed to help software engineers, developers, and other professionals craft clean, effective resumes. 
 
-Move beyond static templates with real-time PDF builders, smart page-overflow budget checkers, isolated account workspaces, and a smart AI chatbot companion that proofreads and applies metric rewrites in 1-click.
+Instead of dealing with static templates, this app provides a real-time PDF builder, visual page-overflow checks, isolated user accounts, and a built-in AI assistant that can help proofread or rewrite your bullet points.
 
-![Resume AI Spark Preview](https://resume-ai-spark.onrender.com/favicon.ico)
+<p align="center">
+  <img src="readme-banner.svg" alt="Resume AI Spark Preview" width="800" />
+</p>
 
-## 🚀 Key Features
+## Key Features
 
-- **Interactive Real-Time Builder**: Watch your resume update in real-time as you edit.
-- **AI Chatbot Companion (Spark AI)**: Get smart recommendations to boost your professional summary and bullet points. Ask the AI to rewrite your experience for maximum impact.
-- **Supabase OAuth**: Secure, frictionless sign-in with Google and GitHub. No more passwords to remember.
-- **Isolated Multi-User Sandboxes**: Every user gets their own isolated workspace and database storage.
-- **Smart Space Budgeting**: Visual indicators help you prevent your resume from bleeding onto a second page.
-- **LaTeX-Quality PDF Export**: Download crisp, perfectly formatted PDFs ready for ATS systems.
+- **Interactive Real-Time Builder:** See your resume update live as you type and edit.
+- **AI Assistant:** Get helpful recommendations for your professional summary and bullet points, or have the AI rewrite your experience sections for better clarity.
+- **Supabase Authentication:** Secure sign-in using Google and GitHub.
+- **Private Workspaces:** Each user gets their own isolated workspace to store their resume data securely.
+- **Space Budgeting:** Visual indicators help you keep your resume content strictly on one page.
+- **PDF Export:** Download clean, properly formatted PDFs that are ready to be parsed by ATS systems.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Tailwind CSS, Lucide React (Icons)
-- **Backend/Auth**: Supabase (PostgreSQL, Row Level Security, OAuth)
-- **Deployment**: Render / Vercel
+- **Frontend:** React 18, TypeScript, Vite
+- **Styling:** Tailwind CSS, Lucide React
+- **Backend & Auth:** Supabase (PostgreSQL, Row Level Security)
+- **Deployment:** Render / Vercel
 
-## 💻 Local Development Setup
+## Local Setup
 
-To run Resume AI Spark locally on your machine, follow these steps:
+If you want to run Resume AI Spark locally on your own machine, follow these steps:
 
 ### 1. Clone the repository
 ```bash
@@ -37,7 +42,7 @@ cd Resume-AI-Spark
 npm install
 ```
 
-### 3. Configure Environment Variables
+### 3. Set up Environment Variables
 Create a `.env` file in the root directory and add your Supabase credentials:
 
 ```env
@@ -45,18 +50,18 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### 4. Start the Development Server
+### 4. Start the server
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`.
+The application will now be running at `http://localhost:3000`.
 
-## 🔒 Authentication Configuration
+## Supabase Configuration
 
-If you are setting up your own Supabase instance:
-1. Go to **Authentication > Providers** in Supabase and enable **Google** and **GitHub**.
-2. Run the following SQL in your Supabase SQL Editor to allow new users to save their profiles:
+If you are setting up your own Supabase backend:
+1. Go to **Authentication > Providers** in your Supabase dashboard and enable **Google** and **GitHub**.
+2. Run the following SQL snippet in your Supabase SQL Editor to allow new users to save their profiles properly:
    ```sql
    CREATE POLICY "Users can insert their own profile" 
    ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
@@ -65,6 +70,6 @@ If you are setting up your own Supabase instance:
    ON profiles FOR UPDATE USING (auth.uid() = id);
    ```
 
-## 📄 License
+## License
 
 This project is open-source and available under the MIT License.
