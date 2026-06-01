@@ -410,7 +410,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer ${
                 isActive
-                  ? (isDark ? "bg-white text-zinc-950 shadow-xs border border-white" : "bg-indigo-600 text-white border border-indigo-600 shadow-md shadow-indigo-600/10")
+                  ? (isDark ? "bg-white text-zinc-950 shadow-xs border border-white" : "bg-blue-600 text-white border border-blue-600 shadow-md shadow-blue-600/10")
                   : tabBtnInactiveClass
               }`}
             >
@@ -528,7 +528,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
               </h3>
               <button
                 onClick={addExp}
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-indigo-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-blue-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 <Plus size={13} />
                 Add Role
@@ -643,7 +643,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
               </h3>
               <button
                 onClick={addEdu}
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-indigo-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-blue-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 <Plus size={13} />
                 Add Record
@@ -727,7 +727,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
               </h3>
               <button
                 onClick={addSkillGroup}
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-indigo-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-blue-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 <Plus size={13} />
                 Add Category
@@ -784,7 +784,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
               </h3>
               <button
                 onClick={addProject}
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-indigo-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-blue-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 <Plus size={13} />
                 Add Project
@@ -865,7 +865,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
                       <label className="block text-[11px] font-semibold text-slate-400">Accomplishments (ATS Bullets)</label>
                       <button
                         onClick={() => addProjBullet(proj.id)}
-                        className="text-[10px] text-indigo-600 hover:text-indigo-850 hover:underline flex items-center gap-0.5 font-bold cursor-pointer"
+                        className="text-[10px] text-blue-600 hover:text-blue-850 hover:underline flex items-center gap-0.5 font-bold cursor-pointer"
                       >
                         <Plus size={10} /> Add Bullet
                       </button>
@@ -907,7 +907,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
               </h3>
               <button
                 onClick={addCert}
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-indigo-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md shadow-blue-600/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 <Plus size={13} />
                 Add Record
@@ -988,7 +988,7 @@ export const ResumeDataEditor: React.FC<ResumeDataEditorProps> = ({
                       <label className="block text-[11px] font-semibold text-slate-400">Supporting Details</label>
                       <button
                         onClick={() => addCertBullet(cert.id)}
-                        className="text-[10px] text-indigo-600 hover:text-indigo-850 hover:underline flex items-center gap-0.5 font-bold cursor-pointer"
+                        className="text-[10px] text-blue-600 hover:text-blue-850 hover:underline flex items-center gap-0.5 font-bold cursor-pointer"
                       >
                         <Plus size={10} /> Add Detail
                       </button>
