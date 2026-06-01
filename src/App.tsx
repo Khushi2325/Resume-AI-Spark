@@ -2624,12 +2624,12 @@ export default function App() {
                               }}
                               className={`group flex items-center gap-3 rounded-[14px] border px-3 py-2 cursor-grab active:cursor-grabbing transition-all hover:shadow-md ${
                                 draggedSectionIndex === index ? "scale-[1.02] shadow-xl z-20 ring-2 ring-sky-500/50 opacity-90" : ""
-                              } ${active ? "border-sky-500/40 bg-sky-500/5 hover:bg-sky-500/10" : isDark ? "border-zinc-800 bg-zinc-950 hover:bg-zinc-900" : "border-slate-200 bg-white hover:bg-slate-50"}`}
+                              } ${active ? (isDark ? "border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/20" : "border-sky-400 bg-sky-50 hover:bg-sky-100 shadow-sm") : isDark ? "border-zinc-800 bg-zinc-950 hover:bg-zinc-900" : "border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm"}`}
                             >
                               <div className={`p-1 rounded-lg transition-colors ${isDark ? "group-hover:bg-zinc-800" : "group-hover:bg-slate-200"}`}>
                                 <GripVertical size={14} className={`transition-colors ${isDark ? "text-slate-600 group-hover:text-slate-300" : "text-slate-400 group-hover:text-slate-600"}`} />
                               </div>
-                              <button type="button" onClick={() => toggleCustomSection(section)} className={`text-left text-xs font-bold flex-1 ${active ? "text-sky-500" : isDark ? "text-slate-400" : "text-slate-600"}`}>
+                              <button type="button" onClick={() => toggleCustomSection(section)} className={`text-left text-xs font-black tracking-wide flex-1 ${active ? (isDark ? "text-sky-400" : "text-sky-800") : isDark ? "text-slate-400" : "text-slate-600"}`}>
                                 {customSectionLabels[section]}
                               </button>
                             </div>
