@@ -1,17 +1,12 @@
 <div align="center">
   <img src="app-icon.svg" alt="Resume AI Spark Logo" width="120" />
   <h1>Resume AI Spark</h1>
+  <p>An interactive, AI-powered resume builder designed to help professionals craft clean, effective, ATS-friendly resumes.</p>
 </div>
 
-Resume AI Spark is an interactive resume builder designed to help software engineers, developers, and other professionals craft clean, effective resumes. 
+<br />
 
-Instead of dealing with static templates, this app provides a real-time PDF builder, visual page-overflow checks, isolated user accounts, and a built-in AI assistant that can help proofread or rewrite your bullet points.
-
-<p align="center">
-  <img src="readme-banner.svg" alt="Resume AI Spark Preview" width="800" />
-</p>
-
-## Key Features
+## 🌟 Key Features
 
 - **Interactive Real-Time Builder:** See your resume update live as you type and edit.
 - **AI Assistant:** Get helpful recommendations for your professional summary and bullet points, or have the AI rewrite your experience sections for better clarity.
@@ -20,16 +15,18 @@ Instead of dealing with static templates, this app provides a real-time PDF buil
 - **Space Budgeting:** Visual indicators help you keep your resume content strictly on one page.
 - **PDF Export:** Download clean, properly formatted PDFs that are ready to be parsed by ATS systems.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 - **Frontend:** React 18, TypeScript, Vite
 - **Styling:** Tailwind CSS, Lucide React
 - **Backend & Auth:** Supabase (PostgreSQL, Row Level Security)
 - **Deployment:** Render / Vercel
 
-## Local Setup
+---
 
-If you want to run Resume AI Spark locally on your own machine, follow these steps:
+## 💻 Local Setup
+
+To run Resume AI Spark locally on your own machine, follow these steps:
 
 ### 1. Clone the repository
 ```bash
@@ -57,7 +54,9 @@ npm run dev
 
 The application will now be running at `http://localhost:3000`.
 
-## Supabase Configuration
+---
+
+## 🔒 Supabase Configuration
 
 If you are setting up your own Supabase backend:
 1. Go to **Authentication > Providers** in your Supabase dashboard and enable **Google** and **GitHub**.
@@ -70,6 +69,6 @@ If you are setting up your own Supabase backend:
    ON profiles FOR UPDATE USING (auth.uid() = id);
    ```
 
-## License
+## 📄 License
 
-This project is open-source and available under the MIT License.
+This project is open-source and available under the [MIT License](LICENSE).
