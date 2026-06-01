@@ -1185,30 +1185,30 @@ export default function App() {
 
   const cardBgClass = isDark
     ? "w-full bg-zinc-900/90 border border-zinc-805 rounded-2xl p-4 space-y-4 shadow-xl text-left transition-colors duration-205"
-    : "w-full bg-white border border-slate-200 shadow-sm hover:shadow-md rounded-2xl p-4 space-y-4 text-left text-slate-800 transition-all duration-200";
+    : "w-full bg-white/80 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(79,70,229,0.08)] rounded-2xl p-4 space-y-4 text-left text-slate-800 transition-all duration-200";
 
   const textLabelClass = isDark ? "text-neutral-400 font-semibold text-[11px]" : "text-slate-500 font-bold text-[11px]";
   const selectElementClass = isDark
     ? "w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-neutral-250 focus:outline-none focus:border-zinc-700 cursor-pointer"
-    : "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 cursor-pointer shadow-2xs transition-all duration-200";
+    : "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 cursor-pointer shadow-2xs transition-all";
 
   const sectionSubHeadingClass = isDark
     ? "text-[11px] font-bold tracking-widest uppercase text-neutral-300 font-mono flex items-center gap-1.5"
-    : "text-[11px] font-black tracking-widest uppercase text-indigo-950 font-mono flex items-center gap-1.5";
+    : "text-[11px] font-black tracking-widest uppercase text-indigo-900 font-mono flex items-center gap-1.5";
 
   const previewColumnBgClass = isDark
     ? "flex flex-col items-center bg-zinc-905/10 rounded-2xl border border-zinc-850 p-4 w-full h-full xl:max-h-[calc(100vh-112px)] overflow-auto"
-    : "flex flex-col items-center bg-white/95 rounded-2xl border border-slate-200 p-4 w-full h-full shadow-[0_16px_50px_rgba(14,165,233,0.08)] xl:max-h-[calc(100vh-112px)] overflow-auto";
+    : "flex flex-col items-center bg-white/95 rounded-2xl border border-indigo-50 p-4 w-full h-full shadow-[0_8px_30px_rgba(79,70,229,0.06)] xl:max-h-[calc(100vh-112px)] overflow-auto";
 
   const presetBtnClass = (active: boolean) => {
     if (active) {
       return isDark
         ? "px-2 py-1.5 rounded-xl font-bold text-xs tracking-wide border transition-all text-center cursor-pointer bg-sky-500/15 text-sky-405 border-sky-500/40 font-extrabold"
-        : "px-2 py-1.5 rounded-xl font-bold text-xs tracking-wide border transition-all text-center cursor-pointer bg-indigo-600 text-white border-indigo-650 font-extrabold shadow-sm";
+        : "px-2 py-1.5 rounded-xl font-bold text-xs tracking-wide border transition-all text-center cursor-pointer bg-indigo-600 text-white border-indigo-600 shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:bg-indigo-700 hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)]";
     }
     return isDark
       ? "px-2 py-1.5 rounded-xl font-bold text-xs tracking-wide border transition-all text-center cursor-pointer bg-slate-950/65 hover:bg-slate-955 text-slate-300 border-slate-800 hover:border-slate-755"
-      : "px-2 py-1.5 rounded-xl font-bold text-xs tracking-wide border transition-all text-center cursor-pointer bg-white hover:bg-slate-55 text-slate-700 border-slate-200 shadow-2xs hover:border-indigo-405 transition-all";
+      : "px-2 py-1.5 rounded-xl font-bold text-xs tracking-wide border transition-all text-center cursor-pointer bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border-slate-200 hover:border-indigo-200 shadow-sm";
   };
 
   const pureAcademicBtnClass = showIcons
@@ -1353,13 +1353,13 @@ export default function App() {
                   <div className={`h-40 rounded-2xl p-4 overflow-y-auto space-y-3 text-[12px] flex flex-col ${isDark ? "bg-zinc-950/60 border border-zinc-850" : "bg-white border border-slate-200 shadow-sm text-slate-800 font-medium"}`}>
                     {demoChatHistory.map((msg, idx) => (
                       <div key={idx} className={`flex gap-2 max-w-[90%] ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}>
-                        <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 border ${msg.role === "user" ? "bg-slate-200 border-slate-300 text-slate-705" : "bg-sky-500/10 border-sky-500/20 text-sky-400"
+                        <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 border ${msg.role === "user" ? "bg-slate-200 border-slate-300 text-slate-705" : isDark ? "bg-sky-500/10 border-sky-500/20 text-sky-400" : "bg-indigo-50 border-indigo-200 text-indigo-600"
                           }`}>
                           {msg.role === "user" ? <User size={10} /> : <Bot size={10} />}
                         </div>
                         <div className={`p-2.5 rounded-2xl leading-relaxed whitespace-pre-wrap ${msg.role === "user"
-                            ? isDark ? "bg-indigo-600 rounded-tr-none text-white shadow-md self-end text-right" : "bg-blue-600 rounded-tr-none text-white shadow-md self-end text-right"
-                            : isDark ? "bg-zinc-900 border border-zinc-800 rounded-tl-none text-zinc-300 text-left" : "bg-blue-50 border-2 border-blue-100 rounded-tl-none text-blue-950 shadow-sm text-left"
+                            ? isDark ? "bg-indigo-600 rounded-tr-none text-white shadow-md self-end text-right" : "bg-indigo-600 rounded-tr-none text-white shadow-sm self-end text-right"
+                            : isDark ? "bg-zinc-900 border border-zinc-800 rounded-tl-none text-zinc-300 text-left" : "bg-white border border-slate-200 rounded-tl-none text-slate-800 shadow-sm text-left"
                           }`}>
                           {msg.text}
                         </div>
@@ -1367,7 +1367,7 @@ export default function App() {
                     ))}
                     {demoIsTyping && (
                       <div className="flex gap-2 mr-auto items-center">
-                        <div className="w-5 h-5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center animate-pulse">
+                        <div className={`w-5 h-5 rounded-lg border flex items-center justify-center animate-pulse ${isDark ? "bg-sky-500/10 border-sky-500/20 text-sky-400" : "bg-indigo-50 border-indigo-200 text-indigo-600"}`}>
                           <Bot size={10} />
                         </div>
                         <span className="text-[10px] text-slate-500 animate-pulse">Spark AI is polishing summary bullets...</span>
@@ -1381,7 +1381,7 @@ export default function App() {
                       type="button"
                       onClick={handleDemoChatAction}
                       disabled={demoIsTyping || demoChatHistory.length > 2}
-                      className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:opacity-50 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-xl shadow-lg shadow-sky-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                      className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-xl shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                     >
                       <Sparkles size={11} />
                       Boost summary points
@@ -1895,8 +1895,16 @@ export default function App() {
   // -------------------------------------------------------------
   return (
     <>
-      <div className={`${mainBgClass} no-print`}>
-
+      <div className={`${mainBgClass} relative overflow-hidden no-print`}>
+        {/* Glowing background blur circles for light mode */}
+        {!isDark && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 fixed">
+            <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] bg-indigo-600/5 animate-pulse duration-[8s]" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] bg-purple-600/5 animate-pulse duration-[10s]" />
+            <div className="absolute top-[40%] right-[10%] w-[40vw] h-[40vw] rounded-full blur-[100px] bg-blue-500/5 animate-pulse duration-[12s]" />
+          </div>
+        )}
+        
         {/* ================= HEADER BAR (NO-PRINT) ================= */}
         <header className={headerClass}>
           {/* Title branding Block - Click to return to landing page */}
@@ -1936,7 +1944,7 @@ export default function App() {
               onClick={() => setWorkspaceTheme(isDark ? "light" : "dark")}
               className={`h-9 px-3.5 rounded-xl border flex items-center justify-center gap-1.5 font-bold text-xs transition-all cursor-pointer ${isDark
                   ? "bg-zinc-900 border-zinc-800 text-amber-400 hover:text-amber-300 hover:bg-zinc-850"
-                  : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:shadow-md hover:shadow-sky-600/5 hover:-translate-y-0.25 shadow-sm"
+                  : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:shadow-md hover:shadow-indigo-600/5 hover:-translate-y-0.25 shadow-sm"
                 }`}
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
@@ -1953,7 +1961,7 @@ export default function App() {
                 <button
                   onClick={() => setAppRoute(appRoute === "resumes" ? "builder" : "resumes")}
                   className={`h-9 flex items-center justify-center gap-1.5 font-bold text-xs px-3.5 rounded-xl border transition-all cursor-pointer ${appRoute === "resumes"
-                      ? "bg-sky-500/15 border-sky-500/40 text-sky-400 font-extrabold"
+                      ? isDark ? "bg-sky-500/15 border-sky-500/40 text-sky-400 font-extrabold" : "bg-indigo-100 border-indigo-200 text-indigo-700 font-extrabold shadow-sm"
                       : isDark
                         ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white"
                         : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-sm"
@@ -1976,7 +1984,7 @@ export default function App() {
 
                 <button
                   onClick={handlePrint}
-                  className={`h-9 flex items-center justify-center gap-1.5 font-bold text-xs px-4 rounded-xl shadow cursor-pointer transition-all active:scale-95 ${isDark ? "bg-white text-slate-950 hover:bg-slate-100" : "bg-zinc-900 hover:bg-zinc-800 text-white shadow-md shadow-zinc-900/20 hover:shadow-lg hover:shadow-zinc-900/30 hover:-translate-y-0.25"
+                  className={`h-9 flex items-center justify-center gap-1.5 font-bold text-xs px-4 rounded-xl shadow cursor-pointer transition-all active:scale-95 ${isDark ? "bg-white text-slate-950 hover:bg-slate-100" : "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] hover:-translate-y-0.25"
                     }`}
                 >
                   <Printer size={13} className="stroke-[2.5]" />
@@ -2678,8 +2686,8 @@ export default function App() {
                       className={`px-2.5 py-1.5 rounded-xl border font-bold text-[10.5px] tracking-wide cursor-pointer transition-all flex items-center gap-1.5 ${sidebarOpen
                           ? isDark
                             ? "bg-slate-900/60 border-slate-850 text-slate-400 hover:text-white"
-                            : "bg-slate-50 border-slate-250 text-slate-600 hover:text-slate-955 shadow-xs"
-                          : "bg-sky-500/15 border-sky-500/40 text-sky-400 font-extrabold shadow-xs"
+                            : "bg-white border-slate-200 text-slate-600 hover:text-indigo-600 shadow-sm hover:border-indigo-100"
+                          : isDark ? "bg-sky-500/15 border-sky-500/40 text-sky-400 font-extrabold shadow-xs" : "bg-indigo-100 border-indigo-200 text-indigo-700 font-extrabold shadow-sm"
                         }`}
                       title={sidebarOpen
                         ? (isDemoProfile ? "Hide style panel" : "Hide editor sidebar to expand resume preview")
@@ -2718,29 +2726,29 @@ export default function App() {
                   <button
                     onClick={() => setMagnifierEnabled(!magnifierEnabled)}
                     className={`px-2.5 py-1.5 rounded-xl border font-bold text-[10.5px] tracking-wide cursor-pointer transition-all flex items-center gap-1.5 ${magnifierEnabled
-                        ? "bg-sky-500/15 border-sky-500/45 text-sky-400 font-extrabold shadow-xs"
+                        ? isDark ? "bg-sky-500/15 border-sky-500/45 text-sky-400 font-extrabold shadow-xs" : "bg-indigo-100 border-indigo-200 text-indigo-700 font-extrabold shadow-sm"
                         : isDark
                           ? "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-250 cursor-pointer"
-                          : "bg-slate-50 border-slate-250 text-slate-500 hover:text-slate-750 cursor-pointer shadow-xs"
+                          : "bg-white border-slate-200 text-slate-600 hover:text-indigo-600 cursor-pointer shadow-sm hover:border-indigo-100"
                       }`}
                     title="Move mouse over resume to magnify and read tiny text instantly"
                   >
-                    <Eye size={12.5} className={magnifierEnabled ? "text-sky-400 stroke-[2.5]" : "text-slate-400"} />
+                    <Eye size={12.5} className={magnifierEnabled ? "text-indigo-600 dark:text-sky-400 stroke-[2.5]" : "text-slate-400"} />
                     <span>Hover Magnifier {magnifierEnabled ? "ON" : "OFF"}</span>
                   </button>
 
                   <div className={`h-4 w-[1px] ${isDark ? "bg-slate-850" : "bg-slate-205"}`} />
 
                   {/* Zoom Mode Selector Button Group */}
-                  <div className={`flex items-center gap-0.5 p-0.5 rounded-xl border ${isDark ? "bg-slate-950 border-slate-850" : "bg-slate-50 border-slate-250 shadow-xs"
+                  <div className={`flex items-center gap-0.5 p-0.5 rounded-xl border ${isDark ? "bg-slate-950 border-slate-850" : "bg-white border-slate-200 shadow-sm"
                     }`}>
                     <button
                       onClick={() => setZoomMode("fit-width")}
                       className={`px-2 py-1.5 rounded-lg font-bold text-[10.5px] tracking-wide cursor-pointer transition-all ${zoomMode === "fit-width"
-                          ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
+                          ? isDark ? "bg-sky-500/15 text-sky-400 border border-sky-500/30" : "bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm"
                           : isDark
                             ? "text-slate-400 hover:text-white"
-                            : "text-slate-600 hover:text-slate-900"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                         }`}
                       title="Fit to workspace width (Recommended)"
                     >
@@ -2749,10 +2757,10 @@ export default function App() {
                     <button
                       onClick={() => setZoomMode("fit-page")}
                       className={`px-2.5 py-1.5 rounded-lg font-bold text-[10.5px] tracking-wide cursor-pointer transition-all ${zoomMode === "fit-page"
-                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                          ? isDark ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" : "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm"
                           : isDark
                             ? "text-slate-400 hover:text-white"
-                            : "text-slate-600 hover:text-slate-900"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                         }`}
                       title="Fit full page height to screen"
                     >
