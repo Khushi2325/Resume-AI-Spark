@@ -11,6 +11,18 @@ export type ResumeLayout =
   | "cv-academic"    // 5. CV Academic — contact right, date-left format entries
   | "minimal";       // 6. Minimal Ink — pure typographic hierarchy, no borders
 
+export type CustomSectionKey = "summary" | "experience" | "projects" | "skills" | "education" | "certifications";
+
+export interface CustomTemplateConfig {
+  accent: string;
+  headerAlign: "left" | "center";
+  headingStyle: "underline" | "pill" | "plain";
+  columns: "single" | "two";
+  density: "airy" | "balanced" | "compact";
+  sections: CustomSectionKey[];
+  dividers: boolean;
+}
+
 interface LatexPrintViewProps {
   data: ResumeData;
   fontSize: number;
@@ -20,6 +32,9 @@ interface LatexPrintViewProps {
   fontTheme?: "classic-serif" | "modern-sans" | "editorial-lora";
   showIcons?: boolean;
   resumeLayout?: ResumeLayout;
+  customCss?: string;
+  customTemplateName?: string;
+  customTemplateConfig?: CustomTemplateConfig | null;
 }
 
 /* ─────────────────────────── shared helpers ─────────────────────────── */
@@ -810,6 +825,68 @@ function MinimalInk({ data, fs, lh, mar, sp, font, icons }: any) {
 /* ══════════════════════════════════════════════════════════════════
    MAIN EXPORT — dispatches to the correct layout component
 ══════════════════════════════════════════════════════════════════ */
+function CustomTemplateBuilder({ data, fs, lh, mar, sp, icons, config }: any) {
+  const { personalInfo: pi, professionalSummary, experience, education, skills, projects, certifications } = data;
+  const gapScale = config.density === "compact" ? 0.65 : config.density === "airy" ? 1.25 : 1;
+  const blockGap = sp * gapScale;
+  const accent = config.accent || "#0ea5e9";
+  const heading = (title: string) => {
+    const base: React.CSSProperties = {
+      fontSize: `${fs + 1.2}pt`,
+      fontWeight: 800,
+      color: "#111827",
+      margin: `0 0 ${blockGap * 0.5}px 0`,
+      letterSpacing: "0.04em",
+      textTransform: "uppercase",
+    };
+    if (config.headingStyle === "pill") return <h2 style={{ ...base, display: "inline-block", background: accent, color: "white", borderRadius: "999px", padding: "3px 9px" }}>{title}</h2>;
+    if (config.headingStyle === "plain") return <h2 style={{ ...base, color: accent }}>{title}</h2>;
+    return <h2 style={{ ...base, borderBottom: `1.5px solid ${accent}`, paddingBottom: "2px" }}>{title}</h2>;
+  };
+  const shell = (title: string, children: React.ReactNode) => (
+    <section style={{ breakInside: "avoid", marginBottom: `${blockGap}px`, paddingBottom: config.dividers ? `${blockGap * 0.35}px` : 0, borderBottom: config.dividers ? "1px solid #e5e7eb" : "none" }}>
+      {heading(title)}
+      {children}
+    </section>
+  );
+  const renderSection = (key: CustomSectionKey) => {
+    if (key === "summary" && professionalSummary) return shell("Summary", <p style={{ margin: 0, color: "#1f2937", textAlign: "justify" }}>{professionalSummary}</p>);
+    if (key === "experience" && experience?.length) return shell("Experience", <div style={{ display: "flex", flexDirection: "column", gap: `${blockGap * 0.75}px` }}>{experience.map((ex: any) => (
+      <div key={ex.id}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", fontWeight: 800 }}><span>{ex.role} - {ex.company}</span><span style={{ color: "#6b7280", fontWeight: 500 }}>{ex.duration}</span></div>
+        <div style={{ color: "#4b5563", fontStyle: "italic" }}>{ex.location}</div>
+        <ul style={{ margin: "3px 0 0 0", paddingLeft: "1.15em" }}>{ex.bullets.map((b: string, i: number) => <li key={i}>{b}</li>)}</ul>
+      </div>
+    ))}</div>);
+    if (key === "projects" && projects?.length) return shell("Projects", <div style={{ display: "flex", flexDirection: "column", gap: `${blockGap * 0.7}px` }}>{projects.map((p: any) => (
+      <div key={p.id}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800 }}><span>{p.title}</span><span style={{ color: accent }}>{p.year}</span></div>
+        {p.techStack?.length > 0 && <div style={{ color: "#6b7280", fontWeight: 700 }}>{p.techStack.join(" | ")}</div>}
+        <ul style={{ margin: "3px 0 0 0", paddingLeft: "1.15em" }}>{p.bullets.map((b: string, i: number) => <li key={i}>{b}</li>)}</ul>
+      </div>
+    ))}</div>);
+    if (key === "skills" && skills?.length) return shell("Skills", <div>{skills.map((s: any) => <div key={s.id}><strong>{s.category}:</strong> {s.skills.join(", ")}</div>)}</div>);
+    if (key === "education" && education?.length) return shell("Education", <div style={{ display: "flex", flexDirection: "column", gap: `${blockGap * 0.55}px` }}>{education.map((ed: any) => (
+      <div key={ed.id}><div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800 }}><span>{ed.institution}</span><span>{ed.years}</span></div><div style={{ color: "#4b5563" }}>{ed.degree} - {ed.location}</div></div>
+    ))}</div>);
+    if (key === "certifications" && certifications?.length) return shell("Certifications", <div style={{ display: "flex", flexDirection: "column", gap: `${blockGap * 0.55}px` }}>{certifications.map((c: any) => (
+      <div key={c.id}><strong>{c.title}</strong>{c.issuer ? ` - ${c.issuer}` : ""} <span style={{ color: "#6b7280" }}>{c.year}</span></div>
+    ))}</div>);
+    return null;
+  };
+  return (
+    <div style={{ fontSize: `${fs}pt`, lineHeight: lh, padding: `${mar * 0.85}in ${mar}in`, fontFamily: "inherit" }}>
+      <header style={{ textAlign: config.headerAlign, marginBottom: `${blockGap * 1.2}px`, borderBottom: `3px solid ${accent}`, paddingBottom: `${blockGap * 0.75}px` }}>
+        <h1 style={{ margin: 0, fontSize: `${fs + 13}pt`, lineHeight: 1.05, color: "#0f172a", fontWeight: 900 }}>{pi.name}</h1>
+        <ContactLine data={pi} showIcons={icons} separator="|" className={config.headerAlign === "center" ? "justify-center mt-1.5" : "justify-start mt-1.5"} />
+      </header>
+      <main style={{ columnCount: config.columns === "two" ? 2 : 1, columnGap: "0.32in" }}>
+        {config.sections.map((key: CustomSectionKey) => <React.Fragment key={key}>{renderSection(key)}</React.Fragment>)}
+      </main>
+    </div>
+  );
+}
+
 export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
   data,
   fontSize,
@@ -819,11 +896,15 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
   fontTheme = "classic-serif",
   showIcons = false,
   resumeLayout = "classic",
+  customCss = "",
+  customTemplateName = "",
+  customTemplateConfig = null,
 }) => {
   const fc = fontClass(fontTheme);
   const shared = { data, fs: fontSize, lh: lineHeight, mar: margins, sp: sectionSpacing, font: fc, icons: showIcons };
 
   const renderLayout = () => {
+    if (customTemplateConfig) return <CustomTemplateBuilder {...shared} config={customTemplateConfig} />;
     switch (resumeLayout) {
       case "two-column":   return <TwoColumnPro   {...shared} />;
       case "bold-banner":  return <BoldBanner     {...shared} />;
@@ -839,6 +920,7 @@ export const LatexPrintView: React.FC<LatexPrintViewProps> = ({
       id="latex-print-view"
       className={`print-container bg-white text-black ${fc} mx-auto w-[8.5in] min-h-[11in] shadow-2xl border border-slate-200 transition-all duration-300 relative select-text overflow-hidden`}
     >
+      {customCss && <style>{customCss}</style>}
       {renderLayout()}
 
       {/* Page boundary guide — screen only */}

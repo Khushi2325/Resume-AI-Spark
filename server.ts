@@ -603,7 +603,8 @@ function parseResumeLocally(rawText: string, allUrls: string[]): ResumeData {
   };
 
   for (const cert of certifications) {
-    const certRawText = (cert.title + " " + cert.bullets.join(" ") + " " + (cert._linkText || "")).toLowerCase();
+    const certMeta = cert as typeof cert & { _linkText?: string };
+    const certRawText = (cert.title + " " + cert.bullets.join(" ") + " " + (certMeta._linkText || "")).toLowerCase();
     
     if (!cert.badgeUrl && certRawText.includes("badge")) {
       cert.badgeUrl = findUnassignedUrl(u => u.includes("credly") || u.includes("badge"));
@@ -612,7 +613,7 @@ function parseResumeLocally(rawText: string, allUrls: string[]): ResumeData {
       cert.certificateUrl = findUnassignedUrl(u => u.includes("drive.google") || u.includes("drive") || u.includes("cert"));
     }
     
-    delete cert._linkText;
+    delete certMeta._linkText;
   }
 
   return {
@@ -697,6 +698,80 @@ CRITICAL TONE & CONVERSATIONAL RULES (STRICT COMPLIANCE REQUIRED):
 // ─────────────────────────────────────────────────────────────────────────────
 // Resume PDF Parser
 // ─────────────────────────────────────────────────────────────────────────────
+app.post("/api/template-recommendations", async (req, res) => {
+  try {
+    const { resume, purpose } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE" || apiKey.includes("YOUR_ACTUAL")) {
+      return res.status(500).json({ error: "GEMINI_API_KEY is not configured." });
+    }
+
+    const prompt = `Act as a resume template selector using lightweight RAG.
+Known templates:
+- classic: ATS-friendly academic/professional single column
+- two-column: technical, portfolio-heavy, skills-forward
+- bold-banner: creative, leadership, public-facing, arts/media
+- tabular: research, teaching, academic credentials
+- cv-academic: research professionals, professors, publications, grants
+- minimal: conservative, school teachers, public sector, compact one-page
+
+User purpose: ${purpose || "general job search"}
+Resume data: ${JSON.stringify(resume)}
+
+Return only valid JSON in this shape:
+{"recommendations":[{"layout":"classic","score":90,"reason":"short plain-English reason"}]}
+Use exactly three recommendations. layout must be one of classic, two-column, bold-banner, tabular, cv-academic, minimal.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { temperature: 0.25 },
+    });
+
+    const raw = response.text || "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    res.json(match ? JSON.parse(match[0]) : { recommendations: [] });
+  } catch (error: any) {
+    console.error("Template Recommendation Error:", error);
+    res.status(500).json({ error: getFriendlyErrorMessage(error) });
+  }
+});
+
+app.post("/api/resume-quality", async (req, res) => {
+  try {
+    const { resume, purpose } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE" || apiKey.includes("YOUR_ACTUAL")) {
+      return res.status(500).json({ error: "GEMINI_API_KEY is not configured." });
+    }
+
+    const prompt = `You are an ATS and resume language evaluator.
+Evaluate this resume for the user's purpose: ${purpose || "general applications"}.
+Score each from 1 to 100:
+- parsability: ATS readability, clear sections, contact links, bullets, dates
+- grammar: professional grammar and technical wording accuracy
+- repetition: high score means low repetition and varied verbs/phrasing
+
+Resume data: ${JSON.stringify(resume)}
+
+Return only valid JSON:
+{"report":{"parsability":85,"grammar":90,"repetition":78,"summary":"one sentence","fixes":["specific fix 1","specific fix 2","specific fix 3"]}}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { temperature: 0.2 },
+    });
+
+    const raw = response.text || "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    res.json(match ? JSON.parse(match[0]) : { report: null });
+  } catch (error: any) {
+    console.error("Resume Quality Error:", error);
+    res.status(500).json({ error: getFriendlyErrorMessage(error) });
+  }
+});
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {

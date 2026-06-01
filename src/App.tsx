@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ResumeData } from "./types";
 import { initialResumeData, blankResumeData } from "./initialData";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
-import { LatexPrintView, ResumeLayout } from "./components/LatexPrintView";
+import { LatexPrintView, ResumeLayout, CustomTemplateConfig, CustomSectionKey } from "./components/LatexPrintView";
 import { ResumeDataEditor } from "./components/ResumeDataEditor";
 import { DigitalDashboard } from "./components/DigitalDashboard";
 import {
@@ -54,6 +54,68 @@ import {
 
 const ACCOUNTS_STORAGE_KEY = "khushi-spark-user-accounts";
 const SESSION_STORAGE_KEY = "khushi-spark-active-session";
+const RESUME_LIBRARY_STORAGE_KEY = "khushi-spark-resume-library";
+const CUSTOM_TEMPLATES_STORAGE_KEY = "khushi-spark-custom-templates";
+
+type AppRoute = "builder" | "resumes";
+
+interface SavedResumeDraft {
+  id: string;
+  ownerKey: string;
+  title: string;
+  purpose: string;
+  data: ResumeData;
+  updatedAt: string;
+}
+
+interface AiTemplateRecommendation {
+  layout: ResumeLayout;
+  score: number;
+  reason: string;
+}
+
+interface ResumeQualityReport {
+  parsability: number;
+  grammar: number;
+  repetition: number;
+  summary: string;
+  fixes: string[];
+}
+
+interface CustomTemplate {
+  id: string;
+  name: string;
+  config: CustomTemplateConfig;
+  css?: string;
+}
+
+const builtInTemplateLabels: Record<ResumeLayout, string> = {
+  classic: "Classic Scholar",
+  "two-column": "Two-Column Pro",
+  "bold-banner": "Bold Banner",
+  tabular: "Academic Tabular",
+  "cv-academic": "CV Academic",
+  minimal: "Minimal Ink",
+};
+
+const defaultCustomTemplateConfig: CustomTemplateConfig = {
+  accent: "#0ea5e9",
+  headerAlign: "center",
+  headingStyle: "underline",
+  columns: "single",
+  density: "balanced",
+  sections: ["summary", "experience", "projects", "skills", "education", "certifications"],
+  dividers: false,
+};
+
+const customSectionLabels: Record<CustomSectionKey, string> = {
+  summary: "Summary",
+  experience: "Experience",
+  projects: "Projects",
+  skills: "Skills",
+  education: "Education",
+  certifications: "Certifications",
+};
 
 interface UserAccount {
   id?: string;
@@ -66,37 +128,7 @@ interface UserAccount {
 
 const isValidEmailAddress = (email: string): boolean => {
   const cleanEmail = email.toLowerCase().trim();
-  
-  // 1. Strict regex check
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(cleanEmail)) {
-    return false;
-  }
-
-  // 2. Reject common generic placeholders
-  const blacklistedEmails = [
-    "abc@gmail.com", "test@test.com", "xyz@gmail.com", 
-    "test@example.com", "admin@gmail.com", "user@gmail.com", 
-    "hello@world.com", "me@home.com", "foo@bar.com"
-  ];
-  if (blacklistedEmails.includes(cleanEmail)) {
-    return false;
-  }
-
-  // 3. Reject known disposable email domains
-  const parts = cleanEmail.split("@");
-  const domain = parts[parts.length - 1];
-  const disposableDomains = [
-    "10minutemail.com", "tempmail.com", "yopmail.com", "sharklasers.com", 
-    "guerrillamail.com", "dispostable.com", "mailinator.com", "getairmail.com", 
-    "burnermail.io", "temp-mail.org", "tempmailaddress.com", "crazymailing.com", 
-    "throwawaymail.com", "maildrop.cc", "tempmail.net", "burnermail.co"
-  ];
-  if (disposableDomains.includes(domain)) {
-    return false;
-  }
-
-  return true;
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanEmail);
 };
 
 const isValidUsername = (username: string) => {
@@ -202,16 +234,63 @@ export default function App() {
   const [unlockCodeInput, setUnlockCodeInput] = useState("");
   const [unlockError, setUnlockError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
-  const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [otpInput, setOtpInput] = useState("");
-  const [otpEmail, setOtpEmail] = useState("");
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   // -------------------------------------------------------------
   // B. WORKSPACE DATA & STYLING STATES
   // -------------------------------------------------------------
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData);
+  const [appRoute, setAppRoute] = useState<AppRoute>("builder");
+  const [activeResumeId, setActiveResumeId] = useState<string>("primary");
+  const [resumePurpose, setResumePurpose] = useState("tech roles");
+  const [resumePage, setResumePage] = useState(1);
+  const [resumeLibrary, setResumeLibrary] = useState<SavedResumeDraft[]>(() => {
+    const saved = localStorage.getItem(RESUME_LIBRARY_STORAGE_KEY);
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved) as SavedResumeDraft[];
+    } catch (e) {
+      console.error("Failed to parse resume library:", e);
+      return [];
+    }
+  });
+  const [templateRecommendations, setTemplateRecommendations] = useState<AiTemplateRecommendation[]>([]);
+  const [isRecommendingTemplates, setIsRecommendingTemplates] = useState(false);
+  const [qualityReport, setQualityReport] = useState<ResumeQualityReport | null>(null);
+  const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
+  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>(() => {
+    const saved = localStorage.getItem(CUSTOM_TEMPLATES_STORAGE_KEY);
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved) as Array<Partial<CustomTemplate>>;
+      return parsed.map((item, idx) => ({
+        id: item.id || `custom-${idx}`,
+        name: item.name || "Custom Template",
+        config: item.config || defaultCustomTemplateConfig,
+      }));
+    } catch (e) {
+      console.error("Failed to parse custom templates:", e);
+      return [];
+    }
+  });
+  const [customTemplateName, setCustomTemplateName] = useState("My Custom Template");
+  const [customTemplateDraft, setCustomTemplateDraft] = useState<CustomTemplateConfig>(defaultCustomTemplateConfig);
+  const [activeCustomTemplateId, setActiveCustomTemplateId] = useState<string>("");
+
+  const ownerKey = currentUser?.id || currentUser?.username?.toLowerCase() || "guest";
+  const userResumes = resumeLibrary
+    .filter((item) => item.ownerKey === ownerKey)
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+  const activeCustomTemplate = customTemplates.find((item) => item.id === activeCustomTemplateId);
+  const activeCustomTemplateConfig = activeCustomTemplate?.config || null;
+
+  useEffect(() => {
+    localStorage.setItem(RESUME_LIBRARY_STORAGE_KEY, JSON.stringify(resumeLibrary));
+  }, [resumeLibrary]);
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(customTemplates));
+  }, [customTemplates]);
 
   const loadSupabaseUser = async (userId: string, fallbackEmail?: string | null) => {
     if (!supabase) return;
@@ -244,15 +323,12 @@ export default function App() {
 
     if (!loadedResume.experience) loadedResume.experience = [];
 
-    const { data: { user } } = await supabase.auth.getUser();
-    const isAuthorized = user?.user_metadata?.is_authorized === true;
-
     const userAccount: UserAccount = {
       id: profile.id,
       username: profile.username,
       email: profile.email || fallbackEmail || "",
       resumeData: loadedResume,
-      is_authorized: isAuthorized,
+      is_authorized: true,
     };
 
     setCurrentUser(userAccount);
@@ -324,13 +400,23 @@ export default function App() {
   }, [currentUser]);
 
   // Save current resume state to active user's account and localStorage
-  const saveUserResume = async (updatedData: ResumeData) => {
+  const saveUserResume = async (updatedData: ResumeData, targetResumeId = activeResumeId) => {
     if (currentUser?.username.toLowerCase() === "demo" && !currentUser.id) {
       setResumeData(initialResumeData);
       return;
     }
 
     setResumeData(updatedData);
+    setResumeLibrary((prev) => {
+      const now = new Date().toISOString();
+      const existing = prev.find((item) => item.id === targetResumeId && item.ownerKey === ownerKey);
+      if (!existing && targetResumeId === "primary") return prev;
+      return prev.map((item) =>
+        item.id === targetResumeId && item.ownerKey === ownerKey
+          ? { ...item, data: updatedData, updatedAt: now }
+          : item
+      );
+    });
     if (currentUser?.id && supabase) {
       const { error } = await supabase
         .from("resumes")
@@ -353,6 +439,77 @@ export default function App() {
       setAccounts(updatedAccounts);
       localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(updatedAccounts));
     }
+  };
+
+  useEffect(() => {
+    if (!currentUser || isDemoProfile) return;
+    setResumeLibrary((prev) => {
+      const hasAny = prev.some((item) => item.ownerKey === ownerKey);
+      if (hasAny) return prev;
+      return [
+        {
+          id: `resume-${Date.now()}`,
+          ownerKey,
+          title: resumeData.personalInfo?.name ? `${resumeData.personalInfo.name} Resume` : "Primary Resume",
+          purpose: resumePurpose,
+          data: resumeData,
+          updatedAt: new Date().toISOString(),
+        },
+        ...prev,
+      ];
+    });
+  }, [currentUser?.id, currentUser?.username]);
+
+  const saveCurrentResumeAsDraft = () => {
+    if (!currentUser || isDemoProfile) return;
+    const now = new Date().toISOString();
+    const titleBase = resumeData.personalInfo?.name || "Untitled";
+    const draft: SavedResumeDraft = {
+      id: `resume-${Date.now()}`,
+      ownerKey,
+      title: `${titleBase} - ${resumePurpose || "General"}`,
+      purpose: resumePurpose || "General resume",
+      data: resumeData,
+      updatedAt: now,
+    };
+    setResumeLibrary((prev) => [draft, ...prev]);
+    setActiveResumeId(draft.id);
+    setResumePage(1);
+    setAppRoute("resumes");
+  };
+
+  const loadResumeDraft = (draft: SavedResumeDraft) => {
+    setActiveResumeId(draft.id);
+    setResumePurpose(draft.purpose || "general roles");
+    saveUserResume(draft.data, draft.id);
+    setAppRoute("builder");
+  };
+
+  const duplicateResumeDraft = (draft: SavedResumeDraft) => {
+    const copy: SavedResumeDraft = {
+      ...draft,
+      id: `resume-${Date.now()}`,
+      title: `${draft.title} Copy`,
+      updatedAt: new Date().toISOString(),
+    };
+    setResumeLibrary((prev) => [copy, ...prev]);
+    setResumePage(1);
+  };
+
+  const deleteResumeDraft = (draftId: string) => {
+    if (!window.confirm("Delete this saved resume draft?")) return;
+    setResumeLibrary((prev) => prev.filter((item) => item.id !== draftId));
+    if (activeResumeId === draftId) {
+      setActiveResumeId("primary");
+    }
+  };
+
+  const renameResumeDraft = (draftId: string, title: string) => {
+    setResumeLibrary((prev) =>
+      prev.map((item) =>
+        item.id === draftId ? { ...item, title: title || item.title, updatedAt: new Date().toISOString() } : item
+      )
+    );
   };
 
   // -------------------------------------------------------------
@@ -418,6 +575,8 @@ export default function App() {
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const [autoScaleHeight, setAutoScaleHeight] = useState<number>(0.65);
   const [autoScaleWidth, setAutoScaleWidth] = useState<number>(0.85);
+  const paperWidthPx = 816;
+  const paperHeightPx = 1056;
 
   const [magnifierEnabled, setMagnifierEnabled] = useState<boolean>(true);
   const [lensActive, setLensActive] = useState<boolean>(false);
@@ -437,9 +596,9 @@ export default function App() {
       if (previewContainerRef.current) {
         // Height scale calculation
         const containerHeight = previewContainerRef.current.clientHeight;
-        const availableHeight = containerHeight - 85;
+        const availableHeight = containerHeight - 96;
         if (availableHeight > 200) {
-          const calculatedHeight = Math.min(Math.max(availableHeight / 1056, 0.35), 1.2);
+          const calculatedHeight = Math.min(Math.max(availableHeight / paperHeightPx, 0.35), 1.2);
           setAutoScaleHeight(calculatedHeight);
         }
 
@@ -447,7 +606,7 @@ export default function App() {
         const containerWidth = previewContainerRef.current.clientWidth;
         const availableWidth = containerWidth - 32;
         if (availableWidth > 200) {
-          const calculatedWidth = Math.min(Math.max(availableWidth / 816, 0.35), 1.5);
+          const calculatedWidth = Math.min(Math.max(availableWidth / paperWidthPx, 0.35), 1.5);
           setAutoScaleWidth(calculatedWidth);
         }
       }
@@ -455,10 +614,13 @@ export default function App() {
 
     updateScale();
     window.addEventListener("resize", updateScale);
+    const observer = previewContainerRef.current ? new ResizeObserver(updateScale) : null;
+    if (previewContainerRef.current && observer) observer.observe(previewContainerRef.current);
     // Extra timeout trigger to settle scales on mode transitions
     const timer = setTimeout(updateScale, 100);
     return () => {
       window.removeEventListener("resize", updateScale);
+      observer?.disconnect();
       clearTimeout(timer);
     };
   }, [workspaceMode, documentHeight, sidebarOpen, zoomMode]);
@@ -476,12 +638,12 @@ export default function App() {
       if (el) {
         const h = el.scrollHeight;
         setDocumentHeight(h);
-        setIsOverflowing(h > 1054);
+        setIsOverflowing(h > paperHeightPx - 2);
       }
     };
     const timer = setTimeout(checkHeight, 150);
     return () => clearTimeout(timer);
-  }, [resumeData, fontSize, lineHeight, margins, sectionSpacing, fontTheme, showIcons]);
+  }, [resumeData, fontSize, lineHeight, margins, sectionSpacing, fontTheme, showIcons, activeCustomTemplateId]);
 
   const applyPreset = (preset: "academic-classic" | "executive-sleek" | "editorial-crisp" | "compact-efficient") => {
     if (preset === "academic-classic") {
@@ -698,17 +860,6 @@ export default function App() {
         return;
       }
 
-      const correctAccessCode = import.meta.env.VITE_ACCESS_CODE || "SPARK2026";
-      const accessCodeVal = accessCodeInput.trim();
-      if (!accessCodeVal) {
-        setAuthError("Registration Access Code is required.");
-        return;
-      }
-      if (accessCodeVal !== correctAccessCode) {
-        setAuthError("Invalid Registration Access Code. Please contact the administrator.");
-        return;
-      }
-
       if (!isValidUsername(term)) {
         setAuthError("Username must be 3-24 characters and can only use letters, numbers, or underscores.");
         return;
@@ -771,9 +922,9 @@ export default function App() {
         setPasswordInput("");
         setAccessCodeInput("");
       } else {
-        setOtpEmail(emailVal);
-        setShowOtpVerification(true);
-        setAuthError("");
+        setAuthMode("login");
+        setAuthError("Registration complete. Please sign in with your email and password.");
+        setPasswordInput("");
       }
     }
   };
@@ -829,92 +980,10 @@ export default function App() {
 
   const handleUnlockWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCurrentUser(prev => prev ? { ...prev, is_authorized: true } : null);
+    setUnlockCodeInput("");
     setUnlockError("");
-    setIsUnlocking(true);
-
-    const val = unlockCodeInput.trim();
-    if (!val) {
-      setUnlockError("Access code cannot be empty.");
-      setIsUnlocking(false);
-      return;
-    }
-
-    const correctAccessCode = import.meta.env.VITE_ACCESS_CODE || "SPARK2026";
-    if (val !== correctAccessCode) {
-      setUnlockError("Invalid registration access code. Please try again.");
-      setIsUnlocking(false);
-      return;
-    }
-
-    if (currentUser?.id && supabase) {
-      try {
-        const { error } = await supabase.auth.updateUser({
-          data: { is_authorized: true }
-        });
-        if (error) throw error;
-
-        // Update local state to reflect authorized status
-        setCurrentUser(prev => prev ? { ...prev, is_authorized: true } : null);
-        setUnlockCodeInput("");
-      } catch (err: any) {
-        setUnlockError(err.message || "Failed to update account permissions. Please check connection.");
-      }
-    } else {
-      // Local account fallback (if any)
-      setCurrentUser(prev => prev ? { ...prev, is_authorized: true } : null);
-      setUnlockCodeInput("");
-    }
     setIsUnlocking(false);
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    setIsVerifyingOtp(true);
-
-    const tokenVal = otpInput.trim();
-    if (!tokenVal) {
-      setAuthError("Verification code is required.");
-      setIsVerifyingOtp(false);
-      return;
-    }
-
-    if (!supabase) {
-      setAuthError("Supabase connection is offline.");
-      setIsVerifyingOtp(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: otpEmail,
-        token: tokenVal,
-        type: "signup"
-      });
-
-      if (error || !data.user) {
-        throw new Error(error?.message || "Invalid or expired verification code.");
-      }
-
-      // Login succeeds! Load profile details
-      await loadSupabaseUser(data.user.id, data.user.email);
-      
-      // Reset inputs & close modal/view
-      setOtpInput("");
-      setOtpEmail("");
-      setShowOtpVerification(false);
-      setShowAuthModal(false);
-      
-      // Clean up signup fields
-      setUsernameInput("");
-      setEmailInput("");
-      setPasswordInput("");
-      setAccessCodeInput("");
-    } catch (err: any) {
-      setAuthError(err.message || "Failed to verify. Please try again.");
-    } finally {
-      setIsVerifyingOtp(false);
-    }
   };
 
   // -------------------------------------------------------------
@@ -999,6 +1068,90 @@ export default function App() {
       }
       return item;
     }));
+  };
+
+  const handleRecommendTemplates = async () => {
+    setIsRecommendingTemplates(true);
+    try {
+      const response = await fetch("/api/template-recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume: resumeData, purpose: resumePurpose }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Template recommendation failed.");
+      setTemplateRecommendations(data.recommendations || []);
+    } catch (err: any) {
+      setTemplateRecommendations([
+        { layout: "two-column", score: 88, reason: "Strong default for technical and portfolio-heavy resumes." },
+        { layout: "classic", score: 80, reason: "Safe ATS-friendly option for academic and formal applications." },
+      ]);
+      setAuthError(err.message || "AI template recommendation failed; showing fallback guidance.");
+    } finally {
+      setIsRecommendingTemplates(false);
+    }
+  };
+
+  const handleAnalyzeResumeQuality = async () => {
+    setIsAnalyzingQuality(true);
+    try {
+      const response = await fetch("/api/resume-quality", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume: resumeData, purpose: resumePurpose }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Resume quality analysis failed.");
+      setQualityReport(data.report);
+    } catch (err: any) {
+      const text = JSON.stringify(resumeData).toLowerCase();
+      const repeated = ["built", "developed", "managed", "created"].filter((word) => (text.match(new RegExp(word, "g")) || []).length > 4);
+      setQualityReport({
+        parsability: 74,
+        grammar: 72,
+        repetition: Math.max(45, 90 - repeated.length * 12),
+        summary: "AI quality service was unavailable, so Spark used a local safety scan.",
+        fixes: repeated.length ? [`Reduce repeated action verbs: ${repeated.join(", ")}.`] : ["Add more quantified impact to bullets."],
+      });
+      setAuthError(err.message || "AI quality check failed; showing local scan instead.");
+    } finally {
+      setIsAnalyzingQuality(false);
+    }
+  };
+
+  const saveCustomTemplate = () => {
+    const template: CustomTemplate = {
+      id: `custom-${Date.now()}`,
+      name: customTemplateName.trim() || "Custom Template",
+      config: customTemplateDraft,
+    };
+    setCustomTemplates((prev) => [template, ...prev]);
+    setActiveCustomTemplateId(template.id);
+  };
+
+  const updateCustomTemplateDraft = <K extends keyof CustomTemplateConfig>(key: K, value: CustomTemplateConfig[K]) => {
+    setCustomTemplateDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const toggleCustomSection = (section: CustomSectionKey) => {
+    setCustomTemplateDraft((prev) => {
+      const exists = prev.sections.includes(section);
+      const sections = exists
+        ? prev.sections.filter((item) => item !== section)
+        : [...prev.sections, section];
+      return { ...prev, sections: sections.length ? sections : [section] };
+    });
+  };
+
+  const moveCustomSection = (section: CustomSectionKey, direction: -1 | 1) => {
+    setCustomTemplateDraft((prev) => {
+      const sections = [...prev.sections];
+      const index = sections.indexOf(section);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= sections.length) return prev;
+      [sections[index], sections[nextIndex]] = [sections[nextIndex], sections[index]];
+      return { ...prev, sections };
+    });
   };
 
   // Setup UI Theme Colors
@@ -1397,81 +1550,7 @@ export default function App() {
             <div className={`p-6 sm:p-8 rounded-2xl border relative text-left w-full ${isDark ? "bg-zinc-900 border-zinc-800 shadow-2xl" : "bg-white/95 border-sky-100 shadow-[0_28px_80px_rgba(14,165,233,0.14)] text-slate-800"
               }`}>
 
-              {showOtpVerification ? (
-                <div>
-                  <div className="text-center mb-6 relative">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${
-                      isDark ? "bg-zinc-950 text-neutral-300 border-zinc-800" : "bg-slate-50 text-indigo-655 border-slate-205 shadow-2xs"
-                    }`}>
-                      <Mail size={18} className="stroke-[2.5]" />
-                    </div>
-                    <h2 className={`text-2xl font-black tracking-tight ${isDark ? "text-neutral-105" : "text-slate-950"}`}>
-                      Verify Your Email
-                    </h2>
-                    <p className={`text-xs mt-1 ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
-                      We have sent a 6-digit confirmation code to:
-                    </p>
-                    <p className="text-xs font-mono font-bold text-sky-500 mt-0.5 break-all">
-                      {otpEmail}
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleVerifyOtp} className="space-y-4">
-                    {authError && (
-                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-650 font-medium">
-                        ⚠️ {authError}
-                      </div>
-                    )}
-
-                    <div className="space-y-1 text-left">
-                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
-                        Verification Code (OTP)
-                      </label>
-                      <input
-                        type="text"
-                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 text-center tracking-[0.5em] font-mono font-bold ${
-                          isDark
-                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
-                            : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
-                        }`}
-                        placeholder="000000"
-                        maxLength={6}
-                        value={otpInput}
-                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ""))}
-                        required
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isVerifyingOtp}
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-950 font-extrabold text-sm py-3.5 rounded-xl shadow-lg shadow-sky-500/20 hover:shadow-xl cursor-pointer transition-all active:scale-98 mt-2 disabled:opacity-50"
-                    >
-                      <span>{isVerifyingOtp ? "Verifying..." : "Confirm Verification Code"}</span>
-                      <ArrowRight size={14} className="stroke-[2.5]" />
-                    </button>
-                  </form>
-
-                  <div className="mt-6 pt-4 border-t border-sky-100 dark:border-zinc-850 flex items-center justify-between text-xs">
-                    <span className={isDark ? "text-slate-450" : "text-slate-500"}>
-                      Entered wrong email?
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowOtpVerification(false);
-                        setAuthError("");
-                        setOtpInput("");
-                      }}
-                      className="text-sky-600 font-extrabold hover:underline cursor-pointer"
-                    >
-                      Back to Register
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Tab Selector for Login/Register */}
+              {/* Tab Selector for Login/Register */}
                   <div className="flex justify-between items-center mb-6 border-b pb-4 border-sky-100 dark:border-zinc-800">
                 <div>
                   <h2 className={`text-2xl font-black tracking-tight ${isDark ? "text-neutral-100" : "text-slate-950"}`}>
@@ -1520,41 +1599,22 @@ export default function App() {
                 </div>
 
                 {authMode === "register" && (
-                  <>
-                    <div className="space-y-1 text-left">
-                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
-                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
-                            : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
-                          }`}
-                        placeholder="e.g. user@example.com"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1 text-left">
-                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
-                        Registration Access Code
-                      </label>
-                      <input
-                        type="text"
-                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
-                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
-                            : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
-                          }`}
-                        placeholder="Enter secret registration code"
-                        value={accessCodeInput}
-                        onChange={(e) => setAccessCodeInput(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </>
+                  <div className="space-y-1 text-left">
+                    <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
+                          ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
+                          : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
+                        }`}
+                      placeholder="e.g. user@example.com"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      required
+                    />
+                  </div>
                 )}
 
                 <div className="space-y-1 text-left">
@@ -1585,51 +1645,6 @@ export default function App() {
                 </button>
               </form>
 
-              {/* Social Login Separator */}
-              <div className="relative my-4 flex items-center justify-center">
-                <div className="w-full border-t border-sky-100 dark:border-zinc-850"></div>
-                <span className={`absolute px-3 text-[10px] font-mono tracking-wider font-bold uppercase ${
-                  isDark ? "bg-zinc-900 text-neutral-500" : "bg-white text-slate-400"
-                }`}>
-                  Or Continue With
-                </span>
-              </div>
-
-              {/* OAuth Provider Buttons */}
-              <div className="grid grid-cols-2 gap-3 mb-2">
-                <button
-                  type="button"
-                  onClick={() => handleOAuthSignIn("google")}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                    isDark
-                      ? "border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-neutral-300 hover:text-white"
-                      : "border-slate-205 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-400 shadow-2xs"
-                  }`}
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                  </svg>
-                  <span>Google</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleOAuthSignIn("github")}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                    isDark
-                      ? "border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-neutral-300 hover:text-white"
-                      : "border-slate-205 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-400 shadow-2xs"
-                  }`}
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.646.64.699 1.026 1.592 1.026 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.138 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-                  </svg>
-                  <span>GitHub</span>
-                </button>
-              </div>
-
               {/* Demo Profile Quick Onboarding */}
               <div className="mt-6 pt-5 border-t border-sky-100 dark:border-zinc-850 flex flex-col gap-2">
                 <span className={`text-[11px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
@@ -1649,8 +1664,6 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            </>
-          )}
         </div>
           </div>
         </main>
@@ -1932,6 +1945,30 @@ export default function App() {
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Print/Save to PDF Button */}
                 <button
+                  onClick={() => setAppRoute(appRoute === "resumes" ? "builder" : "resumes")}
+                  className={`h-9 flex items-center justify-center gap-1.5 font-bold text-xs px-3.5 rounded-xl border transition-all cursor-pointer ${appRoute === "resumes"
+                      ? "bg-sky-500/15 border-sky-500/40 text-sky-400 font-extrabold"
+                      : isDark
+                        ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white"
+                        : "bg-white border-sky-200 text-slate-700 hover:text-sky-700 hover:border-sky-400 shadow-sm"
+                    }`}
+                >
+                  <FileText size={13} />
+                  My Resumes
+                </button>
+
+                {!isDemoProfile && (
+                  <button
+                    onClick={saveCurrentResumeAsDraft}
+                    className={buttonImportExportClass}
+                    title="Save this resume as a separate draft"
+                  >
+                    <Check size={13} />
+                    Save Draft
+                  </button>
+                )}
+
+                <button
                   onClick={handlePrint}
                   className={`h-9 flex items-center justify-center gap-1.5 font-bold text-xs px-4 rounded-xl shadow cursor-pointer transition-all active:scale-95 ${isDark ? "bg-white text-slate-950 hover:bg-slate-100" : "bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white shadow-md shadow-sky-600/15 hover:shadow-lg hover:shadow-sky-600/20 hover:-translate-y-0.25"
                     }`}
@@ -2035,6 +2072,82 @@ export default function App() {
         {/* ================= MAIN CONTAINER BODY ================= */}
         <main className="flex-1 p-4 lg:p-6 flex flex-col w-full max-w-[1750px] lg:px-8 xl:px-10 mx-auto relative">
 
+          {appRoute === "resumes" ? (() => {
+            const pageSize = 6;
+            const totalPages = Math.max(1, Math.ceil(userResumes.length / pageSize));
+            const currentPage = Math.min(resumePage, totalPages);
+            const pagedResumes = userResumes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+            return (
+              <div className="no-print space-y-5">
+                <div className={`rounded-2xl border p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-sky-100 shadow-sm"}`}>
+                  <div>
+                    <h2 className={`text-xl font-black ${isDark ? "text-white" : "text-slate-950"}`}>Saved Resume Library</h2>
+                    <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      Save different versions for research, tech, teaching, arts, and custom applications.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <button onClick={saveCurrentResumeAsDraft} className={buttonImportExportClass}>
+                      <Check size={13} />
+                      Save Current
+                    </button>
+                    <button onClick={() => setAppRoute("builder")} className={buttonImportExportClass}>
+                      <Layout size={13} />
+                      Back to Builder
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {pagedResumes.map((draft) => (
+                    <div key={draft.id} className={`rounded-2xl border p-4 space-y-3 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-sky-100 shadow-sm"}`}>
+                      <input
+                        value={draft.title}
+                        onChange={(e) => renameResumeDraft(draft.id, e.target.value)}
+                        className={`w-full bg-transparent text-sm font-black focus:outline-none ${isDark ? "text-white" : "text-slate-950"}`}
+                      />
+                      <div className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                        Purpose: <span className="font-bold text-sky-500">{draft.purpose || "General"}</span>
+                      </div>
+                      <div className={`text-[10px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                        Updated {new Date(draft.updatedAt).toLocaleString()}
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <button onClick={() => loadResumeDraft(draft)} className={presetBtnClass(activeResumeId === draft.id)}>
+                          Open
+                        </button>
+                        <button onClick={() => duplicateResumeDraft(draft)} className={presetBtnClass(false)}>
+                          Duplicate
+                        </button>
+                        <button onClick={() => deleteResumeDraft(draft.id)} className={presetBtnClass(false)}>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {userResumes.length === 0 && (
+                  <div className={`rounded-2xl border p-8 text-center ${isDark ? "bg-zinc-900 border-zinc-800 text-slate-400" : "bg-white border-sky-100 text-slate-500"}`}>
+                    No saved drafts yet. Save the current resume to start your library.
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-2">
+                  <button disabled={currentPage <= 1} onClick={() => setResumePage((p) => Math.max(1, p - 1))} className={presetBtnClass(false)}>
+                    Previous
+                  </button>
+                  <span className={`text-xs font-mono ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button disabled={currentPage >= totalPages} onClick={() => setResumePage((p) => Math.min(totalPages, p + 1))} className={presetBtnClass(false)}>
+                    Next
+                  </button>
+                </div>
+              </div>
+            );
+          })() : (<>
           {/* Workspace Split Layout */}
           <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
 
@@ -2333,6 +2446,202 @@ export default function App() {
                   </div>
                 </div>
 
+                <div className={cardBgClass}>
+                  <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
+                    <h4 className={sectionSubHeadingClass}>
+                      <Sparkles size={11} className="text-sky-505" />
+                      AI Template Match
+                    </h4>
+                    <span className="text-[9px] font-mono text-slate-500">RAG guided</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className={`block text-[10px] font-bold uppercase tracking-wide font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      Resume Purpose
+                    </label>
+                    <input
+                      value={resumePurpose}
+                      onChange={(e) => setResumePurpose(e.target.value)}
+                      placeholder="research professional, techie, school teacher, drama artist..."
+                      className={`w-full rounded-xl border px-3 py-2 text-xs focus:outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-slate-200 text-slate-800 shadow-2xs"}`}
+                    />
+                    <button onClick={handleRecommendTemplates} disabled={isRecommendingTemplates} className={pureAcademicBtnClass}>
+                      {isRecommendingTemplates ? "Reading resume context..." : "Recommend Best Templates"}
+                    </button>
+                  </div>
+
+                  {templateRecommendations.length > 0 && (
+                    <div className="space-y-2">
+                      {templateRecommendations.map((rec) => (
+                        <button
+                          key={rec.layout}
+                          onClick={() => setResumeLayout(rec.layout)}
+                          className={`w-full text-left rounded-xl border p-3 transition-all cursor-pointer ${resumeLayout === rec.layout
+                              ? "border-sky-500 bg-sky-500/10"
+                              : isDark ? "border-zinc-800 bg-zinc-950/60" : "border-slate-200 bg-white"
+                            }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`text-xs font-black ${isDark ? "text-white" : "text-slate-900"}`}>{builtInTemplateLabels[rec.layout]}</span>
+                            <span className="text-[10px] font-mono font-bold text-sky-500">{rec.score}%</span>
+                          </div>
+                          <p className={`text-[10px] mt-1 leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>{rec.reason}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={cardBgClass}>
+                  <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
+                    <h4 className={sectionSubHeadingClass}>
+                      <CheckCircle size={11} className="text-emerald-500" />
+                      AI Resume Scores
+                    </h4>
+                    <button onClick={handleAnalyzeResumeQuality} disabled={isAnalyzingQuality} className="text-[10px] font-bold text-sky-500 hover:underline">
+                      {isAnalyzingQuality ? "Analyzing..." : "Run AI Check"}
+                    </button>
+                  </div>
+
+                  {qualityReport ? (
+                    <div className="space-y-3">
+                      {[
+                        ["Parsability", qualityReport.parsability],
+                        ["Grammar", qualityReport.grammar],
+                        ["Repetition", qualityReport.repetition],
+                      ].map(([label, value]) => (
+                        <div key={label as string} className="space-y-1">
+                          <div className="flex justify-between text-[11px] font-bold">
+                            <span className={textLabelClass}>{label}</span>
+                            <span className="font-mono text-sky-500">{value as number}%</span>
+                          </div>
+                          <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-zinc-950" : "bg-slate-100"}`}>
+                            <div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${value as number}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                      <p className={`text-[10px] leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>{qualityReport.summary}</p>
+                      <ul className={`list-disc pl-4 text-[10px] space-y-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        {qualityReport.fixes?.map((fix, idx) => <li key={idx}>{fix}</li>)}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className={`text-[10px] leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      Run the AI check to score ATS parsability, technical grammar, and repeated wording.
+                    </p>
+                  )}
+                </div>
+
+                <div className={cardBgClass}>
+                  <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
+                    <h4 className={sectionSubHeadingClass}>
+                      <FileCode size={11} className="text-sky-505" />
+                      Custom Template Studio
+                    </h4>
+                    <span className="text-[9px] font-mono text-slate-500">No-code</span>
+                  </div>
+                  <input
+                    value={customTemplateName}
+                    onChange={(e) => setCustomTemplateName(e.target.value)}
+                    className={`w-full rounded-xl border px-3 py-2 text-xs focus:outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-slate-200 text-slate-800 shadow-2xs"}`}
+                  />
+
+                  <div className="space-y-2">
+                    <label className={`block text-[10px] font-bold uppercase tracking-wide font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>Accent Color</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {["#0ea5e9", "#6366f1", "#14b8a6", "#22c55e", "#f97316", "#ef4444", "#111827"].map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => updateCustomTemplateDraft("accent", color)}
+                          className={`w-8 h-8 rounded-full border-2 cursor-pointer ${customTemplateDraft.accent === color ? "border-white ring-2 ring-sky-400" : "border-transparent"}`}
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ["single", "Single Column"],
+                      ["two", "Two Column"],
+                    ].map(([value, label]) => (
+                      <button key={value} onClick={() => updateCustomTemplateDraft("columns", value as CustomTemplateConfig["columns"])} className={presetBtnClass(customTemplateDraft.columns === value)}>
+                        {label}
+                      </button>
+                    ))}
+                    {[
+                      ["center", "Centered Header"],
+                      ["left", "Left Header"],
+                    ].map(([value, label]) => (
+                      <button key={value} onClick={() => updateCustomTemplateDraft("headerAlign", value as CustomTemplateConfig["headerAlign"])} className={presetBtnClass(customTemplateDraft.headerAlign === value)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["underline", "pill", "plain"] as const).map((style) => (
+                      <button key={style} onClick={() => updateCustomTemplateDraft("headingStyle", style)} className={presetBtnClass(customTemplateDraft.headingStyle === style)}>
+                        {style}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["compact", "balanced", "airy"] as const).map((density) => (
+                      <button key={density} onClick={() => updateCustomTemplateDraft("density", density)} className={presetBtnClass(customTemplateDraft.density === density)}>
+                        {density}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button onClick={() => updateCustomTemplateDraft("dividers", !customTemplateDraft.dividers)} className={presetBtnClass(customTemplateDraft.dividers)}>
+                    {customTemplateDraft.dividers ? "Section Dividers On" : "Section Dividers Off"}
+                  </button>
+
+                  <div className="space-y-2">
+                    <label className={`block text-[10px] font-bold uppercase tracking-wide font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>Sections & Order</label>
+                    <div className="space-y-1.5">
+                      {(Object.keys(customSectionLabels) as CustomSectionKey[]).map((section) => {
+                        const active = customTemplateDraft.sections.includes(section);
+                        return (
+                          <div key={section} className={`flex items-center justify-between gap-2 rounded-xl border px-2 py-1.5 ${active ? "border-sky-500/40 bg-sky-500/10" : isDark ? "border-zinc-800 bg-zinc-950" : "border-slate-200 bg-white"}`}>
+                            <button type="button" onClick={() => toggleCustomSection(section)} className={`text-left text-xs font-bold flex-1 ${active ? "text-sky-400" : isDark ? "text-slate-400" : "text-slate-600"}`}>
+                              {customSectionLabels[section]}
+                            </button>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={() => moveCustomSection(section, -1)} disabled={!active} className={presetBtnClass(false)}>Up</button>
+                              <button type="button" onClick={() => moveCustomSection(section, 1)} disabled={!active} className={presetBtnClass(false)}>Down</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <textarea
+                    value={customTemplateDraft.sections.map((section, idx) => `${idx + 1}. ${customSectionLabels[section]}`).join("\n")}
+                    readOnly
+                    rows={4}
+                    className={`w-full rounded-xl border px-3 py-2 text-[10px] font-mono focus:outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-slate-300" : "bg-white border-slate-200 text-slate-600 shadow-2xs"}`}
+                  />
+                  <div className="flex gap-2 flex-wrap">
+                    <button onClick={saveCustomTemplate} className={presetBtnClass(false)}>Save Template</button>
+                    <button onClick={() => setActiveCustomTemplateId("")} className={presetBtnClass(!activeCustomTemplateId)}>Built-in Style</button>
+                  </div>
+                  {customTemplates.length > 0 && (
+                    <div className="grid grid-cols-1 gap-2">
+                      {customTemplates.map((tpl) => (
+                        <button key={tpl.id} onClick={() => setActiveCustomTemplateId(tpl.id)} className={presetBtnClass(activeCustomTemplateId === tpl.id)}>
+                          {tpl.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
             )}
 
@@ -2468,7 +2777,7 @@ export default function App() {
                     }`}
                   style={{
                     width: `${8.5 * effectiveZoom}in`,
-                    height: `${documentHeight * effectiveZoom}px`,
+                    height: `${paperHeightPx * effectiveZoom}px`,
                     transition: "width 0.15s, height 0.15s"
                   }}
                   onMouseMove={handleMouseMove}
@@ -2494,6 +2803,8 @@ export default function App() {
                       fontTheme={fontTheme}
                       resumeLayout={resumeLayout}
                       showIcons={showIcons}
+                      customTemplateName={activeCustomTemplate?.name || ""}
+                      customTemplateConfig={activeCustomTemplateConfig}
                     />
                   </div>
 
@@ -2517,9 +2828,9 @@ export default function App() {
                           style={{
                             transform: `scale(${magScale})`,
                             left: `${110 - lensCoords.px * 8.5 * 96 * magScale}px`,
-                            top: `${110 - lensCoords.py * documentHeight * magScale}px`,
-                            width: "816px",
-                            height: `${documentHeight}px`,
+                            top: `${110 - lensCoords.py * paperHeightPx * magScale}px`,
+                            width: `${paperWidthPx}px`,
+                            height: `${paperHeightPx}px`,
                             transformOrigin: "top left",
                             position: "absolute",
                             backgroundColor: "white",
@@ -2534,6 +2845,8 @@ export default function App() {
                             fontTheme={fontTheme}
                             resumeLayout={resumeLayout}
                             showIcons={showIcons}
+                            customTemplateName={activeCustomTemplate?.name || ""}
+                            customTemplateConfig={activeCustomTemplateConfig}
                           />
                         </div>
 
@@ -2550,6 +2863,8 @@ export default function App() {
             </div>
 
           </div>
+
+          </>)}
 
         </main>
 
@@ -2751,7 +3066,7 @@ export default function App() {
           )}
         </div>}
 
-        {currentUser && currentUser.id && !currentUser.is_authorized && (
+        {false && currentUser && currentUser.id && !currentUser.is_authorized && (
           <div className="fixed inset-0 bg-black/85 backdrop-blur-xl z-[4000] flex items-center justify-center p-4">
             <div className="relative w-full max-w-md">
               <div className={`p-6 sm:p-8 rounded-3xl border shadow-2xl relative text-left ${
@@ -2764,7 +3079,7 @@ export default function App() {
                     <Lock size={22} className="stroke-[2.5]" />
                   </div>
                   <h2 className={`text-xl font-bold tracking-tight ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
-                    Verification Required
+                    Workspace Ready
                   </h2>
                   <p className={`text-xs mt-1 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
                     This workspace is restricted to authorized candidates.
@@ -2780,8 +3095,11 @@ export default function App() {
 
                   <div className="space-y-1 text-left">
                     <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
-                      Registration Access Code
+                      Workspace Access
                     </label>
+                    <p className={`text-[10px] font-mono tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                      Your account is ready to use.
+                    </p>
                     <input
                       type="password"
                       className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-455 ${
@@ -2835,81 +3153,7 @@ export default function App() {
 
               <div className={`p-6 sm:p-8 rounded-3xl border shadow-lg relative text-left ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white/95 backdrop-blur-md border-white/60 shadow-[0_10px_40px_rgba(99,102,241,0.04)]"
                 }`}>
-                {showOtpVerification ? (
-                  <div>
-                    <div className="text-center mb-6 relative">
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${
-                        isDark ? "bg-zinc-950 text-neutral-300 border-zinc-800" : "bg-slate-50 text-indigo-655 border-slate-205 shadow-2xs"
-                      }`}>
-                        <Mail size={18} className="stroke-[2.5]" />
-                      </div>
-                      <h2 className={`text-xl font-bold tracking-tight ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
-                        Verify Your Email
-                      </h2>
-                      <p className={`text-xs mt-1 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
-                        We have sent a 6-digit confirmation code to:
-                      </p>
-                      <p className="text-xs font-mono font-bold text-sky-500 mt-0.5 break-all">
-                        {otpEmail}
-                      </p>
-                    </div>
-
-                    <form onSubmit={handleVerifyOtp} className="space-y-4">
-                      {authError && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-650 font-medium">
-                          ⚠️ {authError}
-                        </div>
-                      )}
-
-                      <div className="space-y-1 text-left">
-                        <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
-                          Verification Code (OTP)
-                        </label>
-                        <input
-                          type="text"
-                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-455 text-center tracking-[0.5em] font-mono font-bold ${
-                            isDark
-                              ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
-                              : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
-                          }`}
-                          placeholder="000000"
-                          maxLength={6}
-                          value={otpInput}
-                          onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ""))}
-                          required
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isVerifyingOtp}
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-950 font-bold text-xs py-3 rounded-xl shadow-md shadow-sky-600/15 hover:shadow-lg cursor-pointer transition-all active:scale-98 mt-2 disabled:opacity-50"
-                      >
-                        <span>{isVerifyingOtp ? "Verifying..." : "Confirm Verification Code"}</span>
-                        <ArrowRight size={14} className="stroke-[2.5]" />
-                      </button>
-                    </form>
-
-                    <div className="mt-6 pt-4 border-t border-sky-500/10 flex items-center justify-between text-xs">
-                      <span className={isDark ? "text-slate-400" : "text-slate-500"}>
-                        Entered wrong email?
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowOtpVerification(false);
-                          setAuthError("");
-                          setOtpInput("");
-                        }}
-                        className="text-sky-405 font-extrabold hover:underline cursor-pointer"
-                      >
-                        Back to Register
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-center mb-6 relative">
+                <div className="text-center mb-6 relative">
                   <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border ${isDark ? "bg-zinc-950 text-neutral-300 border-zinc-800" : "bg-slate-50 text-indigo-655 border-slate-205 shadow-2xs"
                     }`}>
                     <Lock size={18} className="stroke-[2.5]" />
@@ -2923,6 +3167,7 @@ export default function App() {
                       : "Create a secured, private sandbox profile"
                     }
                   </p>
+
                 </div>
 
                 <form onSubmit={handleAuthSubmit} className="space-y-4 relative">
@@ -2950,41 +3195,22 @@ export default function App() {
                   </div>
 
                   {authMode === "register" && (
-                    <>
-                      <div className="space-y-1 text-left">
-                        <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
-                          Email Address
-                        </label>
-                        <input
-                          type="email"
-                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-400 ${isDark
-                              ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
-                              : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
-                            }`}
-                          placeholder="e.g. user@example.com"
-                          value={emailInput}
-                          onChange={(e) => setEmailInput(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-1 text-left">
-                        <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
-                          Registration Access Code
-                        </label>
-                        <input
-                          type="text"
-                          className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-400 ${isDark
-                              ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
-                              : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
-                            }`}
-                          placeholder="Enter secret registration code"
-                          value={accessCodeInput}
-                          onChange={(e) => setAccessCodeInput(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </>
+                    <div className="space-y-1 text-left">
+                      <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        className={`w-full border rounded-xl px-3.5 py-2.5 text-xs focus:outline-none placeholder:text-neutral-400 ${isDark
+                            ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-700"
+                            : "bg-white border-slate-205 text-slate-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-2xs"
+                          }`}
+                        placeholder="e.g. user@example.com"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        required
+                      />
+                    </div>
                   )}
 
                   <div className="space-y-1 text-left">
@@ -3014,51 +3240,6 @@ export default function App() {
                     <ArrowRight size={14} className="stroke-[2.5]" />
                   </button>
                 </form>
-
-                {/* Social Login Separator */}
-                <div className="relative my-4 flex items-center justify-center">
-                  <div className="w-full border-t border-sky-500/10 dark:border-zinc-800"></div>
-                  <span className={`absolute px-3 text-[10px] font-mono tracking-wider font-bold uppercase ${
-                    isDark ? "bg-zinc-900 text-neutral-500" : "bg-white text-slate-400"
-                  }`}>
-                    Or Continue With
-                  </span>
-                </div>
-
-                {/* OAuth Provider Buttons */}
-                <div className="grid grid-cols-2 gap-3 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOAuthSignIn("google")}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                      isDark
-                        ? "border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-neutral-300 hover:text-white"
-                        : "border-slate-205 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-400 shadow-2xs"
-                    }`}
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                    </svg>
-                    <span>Google</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleOAuthSignIn("github")}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                      isDark
-                        ? "border-zinc-800 bg-zinc-950 hover:bg-zinc-850 text-neutral-300 hover:text-white"
-                        : "border-slate-205 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-400 shadow-2xs"
-                    }`}
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.646.64.699 1.026 1.592 1.026 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.138 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-                    </svg>
-                    <span>GitHub</span>
-                  </button>
-                </div>
 
                 {/* Demo profile shortcuts */}
                 <div className="mt-4 pt-3 border-t border-sky-500/10 flex flex-col gap-2">
@@ -3091,8 +3272,6 @@ export default function App() {
                     {authMode === "login" ? "Create Custom Profile" : "Sign In to Existing"}
                   </button>
                 </div>
-                  </>
-                )}
               </div>
 
             </div>
@@ -3113,6 +3292,8 @@ export default function App() {
           fontTheme={fontTheme}
           resumeLayout={resumeLayout}
           showIcons={showIcons}
+          customTemplateName={activeCustomTemplate?.name || ""}
+          customTemplateConfig={activeCustomTemplateConfig}
         />
       </div>
     </>
