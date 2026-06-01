@@ -1166,7 +1166,7 @@ export default function App() {
 
   const mainBgClass = isDark
     ? "min-h-screen bg-[#111112] text-[#f4f4f3] flex flex-col font-sans select-text antialiased transition-colors duration-200"
-    : "min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col font-sans select-text antialiased transition-colors duration-200";
+    : "min-h-screen bg-white text-slate-900 flex flex-col font-sans select-text antialiased transition-colors duration-200";
 
   const headerClass = isDark
     ? "no-print shrink-0 border-b border-zinc-850 bg-[#111112]/95 backdrop-blur px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sticky top-0 z-50 transition-colors duration-205"
@@ -1237,9 +1237,9 @@ export default function App() {
       <div className={landingBgClass}>
         {/* Glowing background blur circles */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 fixed">
-          <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] animate-pulse duration-[8s] ${isDark ? "bg-indigo-500/10" : "bg-transparent"
+          <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] animate-pulse duration-[8s] ${isDark ? "bg-indigo-500/10" : "bg-blue-400/20"
             }`} />
-          <div className={`absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] animate-pulse duration-[10s] ${isDark ? "bg-purple-500/10" : "bg-transparent"
+          <div className={`absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] animate-pulse duration-[10s] ${isDark ? "bg-purple-500/10" : "bg-sky-400/20"
             }`} />
         </div>
 
@@ -1251,7 +1251,7 @@ export default function App() {
           <div className="flex items-center gap-3 text-left select-none">
             <img src="/app-icon.svg" className="w-11 h-11 rounded-2xl shadow-lg shadow-sky-500/25 object-cover" alt="Resume AI Spark Logo" />
             <div>
-              <span className="font-extrabold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-blue-700 block">
+              <span className="font-black text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-blue-700 drop-shadow-sm font-display block">
                 RESUME AI SPARK
               </span>
               <p className={`text-[11px] -mt-0.5 font-medium ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
@@ -1294,7 +1294,7 @@ export default function App() {
               </h1>
 
               <p className={`max-w-4xl text-base leading-8 ${isDark ? "text-slate-400" : "text-slate-700"}`}>
-                Welcome to <strong className="font-bold text-black dark:text-slate-200">Resume AI Spark</strong>, an elite interactive CV ecosystem.
+                Welcome to <strong className="font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-600">Resume AI Spark</strong>, an elite interactive CV ecosystem.
                 Move beyond static templates with real-time PDF builders, smart page-overflow budget checkers,
                 isolated account workspaces, and a smart AI chatbot companion that proofreads and applies metric rewrites in 1-click.
               </p>
@@ -1609,17 +1609,17 @@ export default function App() {
                 {authMode === "register" && (
                   <div className="space-y-1 text-left">
                     <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
-                      Full Name
+                      Email Address
                     </label>
                     <input
-                      type="text"
+                      type="email"
                       className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
                           ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
                           : "bg-white border-slate-200 text-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm"
                         }`}
-                      placeholder="e.g. Khushi Chorvadi"
-                      value={fullNameInput}
-                      onChange={(e) => setFullNameInput(e.target.value)}
+                      placeholder="e.g. khushi@example.com"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
                       required
                     />
                   </div>
