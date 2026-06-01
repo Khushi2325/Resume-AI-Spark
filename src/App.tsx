@@ -2616,12 +2616,14 @@ export default function App() {
                                 setCustomTemplateDraft(prev => ({ ...prev, sections: newActiveSections }));
                                 setActiveCustomTemplateId("draft");
                               }}
-                              className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 cursor-grab active:cursor-grabbing transition-transform ${
-                                draggedSectionIndex === index ? "scale-105 shadow-lg z-10 relative" : ""
-                              } ${active ? "border-sky-500/40 bg-sky-500/10" : isDark ? "border-zinc-800 bg-zinc-950" : "border-slate-200 bg-white"}`}
+                              className={`group flex items-center gap-3 rounded-[14px] border px-3 py-2 cursor-grab active:cursor-grabbing transition-all hover:shadow-md ${
+                                draggedSectionIndex === index ? "scale-[1.02] shadow-xl z-20 ring-2 ring-sky-500/50 opacity-90" : ""
+                              } ${active ? "border-sky-500/40 bg-sky-500/5 hover:bg-sky-500/10" : isDark ? "border-zinc-800 bg-zinc-950 hover:bg-zinc-900" : "border-slate-200 bg-white hover:bg-slate-50"}`}
                             >
-                              <GripVertical size={14} className={isDark ? "text-slate-600" : "text-slate-400"} />
-                              <button type="button" onClick={() => toggleCustomSection(section)} className={`text-left text-xs font-bold flex-1 ${active ? "text-sky-400" : isDark ? "text-slate-400" : "text-slate-600"}`}>
+                              <div className={`p-1 rounded-lg transition-colors ${isDark ? "group-hover:bg-zinc-800" : "group-hover:bg-slate-200"}`}>
+                                <GripVertical size={14} className={`transition-colors ${isDark ? "text-slate-600 group-hover:text-slate-300" : "text-slate-400 group-hover:text-slate-600"}`} />
+                              </div>
+                              <button type="button" onClick={() => toggleCustomSection(section)} className={`text-left text-xs font-bold flex-1 ${active ? "text-sky-500" : isDark ? "text-slate-400" : "text-slate-600"}`}>
                                 {customSectionLabels[section]}
                               </button>
                             </div>
@@ -2680,6 +2682,21 @@ export default function App() {
                     >
                       <Columns size={12.5} />
                       <span>{sidebarOpen ? (isDemoProfile ? "Hide Styles" : "Hide Editor") : (isDemoProfile ? "Show Styles" : "Show Editor")}</span>
+                    </button>
+
+                    <button
+                      onClick={handleAnalyzeResumeQuality}
+                      disabled={isAnalyzingQuality}
+                      className={`px-2.5 py-1.5 rounded-xl border font-bold text-[10.5px] tracking-wide cursor-pointer transition-all flex items-center gap-1.5 ${
+                        isAnalyzingQuality || qualityReport
+                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-500 shadow-xs"
+                          : isDark
+                            ? "bg-slate-900/60 border-slate-850 text-emerald-400 hover:text-emerald-300"
+                            : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:text-emerald-700 shadow-xs"
+                      }`}
+                    >
+                      <CheckCircle size={12.5} className={isAnalyzingQuality || qualityReport ? "text-emerald-500" : ""} />
+                      <span>{isAnalyzingQuality ? "Analyzing..." : "Run AI Check"}</span>
                     </button>
 
                     <div className={`h-4 w-[1px] ${isDark ? "bg-slate-850" : "bg-slate-205"}`} />
@@ -2862,49 +2879,52 @@ export default function App() {
               </div>
 
               {/* ATS Resume Check Block */}
-              <div className={`mt-6 rounded-3xl border shadow-sm p-4 lg:p-5 flex flex-col gap-4 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-sky-100"}`}>
-                  <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
-                    <h4 className={`text-sm font-bold flex items-center gap-1.5 ${isDark ? "text-slate-200" : "text-slate-800"}`}>
-                      <CheckCircle size={14} className="text-emerald-500" />
-                      AI Resume Scores
-                    </h4>
-                    <button onClick={handleAnalyzeResumeQuality} disabled={isAnalyzingQuality} className="text-xs font-bold text-sky-500 hover:underline">
-                      {isAnalyzingQuality ? "Analyzing..." : "Run AI Check"}
-                    </button>
-                  </div>
-
-                  {qualityReport ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[
-                        ["Parsability", qualityReport.parsability],
-                        ["Grammar", qualityReport.grammar],
-                        ["Repetition", qualityReport.repetition],
-                      ].map(([label, value]) => (
-                        <div key={label as string} className="space-y-1.5">
-                          <div className="flex justify-between text-xs font-bold">
-                            <span className={isDark ? "text-slate-400" : "text-slate-600"}>{label}</span>
-                            <span className="font-mono text-sky-500">{value as number}%</span>
-                          </div>
-                          <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-zinc-950" : "bg-slate-100"}`}>
-                            <div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${value as number}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                      <div className="md:col-span-3 space-y-2 mt-2">
-                         <p className={`text-xs leading-relaxed font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>{qualityReport.summary}</p>
-                         {qualityReport.fixes && qualityReport.fixes.length > 0 && (
-                           <ul className={`list-disc pl-5 text-xs space-y-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                             {qualityReport.fixes.map((fix, idx) => <li key={idx}>{fix}</li>)}
-                           </ul>
-                         )}
-                      </div>
+              {(isAnalyzingQuality || qualityReport) && (
+                <div className={`mt-6 rounded-3xl border shadow-sm p-4 lg:p-5 flex flex-col gap-4 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-sky-100"}`}>
+                    <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
+                      <h4 className={`text-sm font-bold flex items-center gap-1.5 ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                        <CheckCircle size={14} className="text-emerald-500" />
+                        AI Resume Scores
+                      </h4>
+                      <button onClick={() => setQualityReport(null)} className={`text-xs font-bold hover:underline ${isDark ? "text-slate-400 hover:text-slate-300" : "text-slate-500 hover:text-slate-600"}`}>
+                        Dismiss
+                      </button>
                     </div>
-                  ) : (
-                    <p className={`text-xs leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                      Run the AI check to score ATS parsability, technical grammar, and repeated wording. The results will appear here.
-                    </p>
-                  )}
-              </div>
+
+                    {isAnalyzingQuality ? (
+                      <div className="flex flex-col items-center justify-center py-6 gap-3 text-emerald-500 animate-pulse">
+                         <CheckCircle size={24} className="animate-spin" />
+                         <span className="text-xs font-bold">Scanning Document...</span>
+                      </div>
+                    ) : qualityReport ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in zoom-in duration-500">
+                        {[
+                          ["Parsability", qualityReport.parsability],
+                          ["Grammar", qualityReport.grammar],
+                          ["Repetition", qualityReport.repetition],
+                        ].map(([label, value]) => (
+                          <div key={label as string} className="space-y-1.5">
+                            <div className="flex justify-between text-xs font-bold">
+                              <span className={isDark ? "text-slate-400" : "text-slate-600"}>{label}</span>
+                              <span className="font-mono text-emerald-500">{value as number}%</span>
+                            </div>
+                            <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-zinc-950" : "bg-slate-100"}`}>
+                              <div className="h-full bg-gradient-to-r from-emerald-500 to-sky-500" style={{ width: `${value as number}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                        <div className="md:col-span-3 space-y-2 mt-2">
+                           <p className={`text-xs leading-relaxed font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>{qualityReport.summary}</p>
+                           {qualityReport.fixes && qualityReport.fixes.length > 0 && (
+                             <ul className={`list-disc pl-5 text-xs space-y-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                               {qualityReport.fixes.map((fix, idx) => <li key={idx}>{fix}</li>)}
+                             </ul>
+                           )}
+                        </div>
+                      </div>
+                    ) : null}
+                </div>
+              )}
 
             </div>
 
