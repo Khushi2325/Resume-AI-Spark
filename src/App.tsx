@@ -282,7 +282,9 @@ export default function App() {
     .filter((item) => item.ownerKey === ownerKey)
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   const activeCustomTemplate = customTemplates.find((item) => item.id === activeCustomTemplateId);
-  const activeCustomTemplateConfig = activeCustomTemplate?.config || null;
+  const activeCustomTemplateConfig = activeCustomTemplateId === "draft"
+    ? customTemplateDraft
+    : activeCustomTemplate?.config || null;
 
   useEffect(() => {
     localStorage.setItem(RESUME_LIBRARY_STORAGE_KEY, JSON.stringify(resumeLibrary));
@@ -552,16 +554,15 @@ export default function App() {
     const saved = localStorage.getItem("khushi-resume-theme");
     return (saved as "dark" | "light") || "dark";
   });
-
   useEffect(() => {
     localStorage.setItem("khushi-resume-theme", workspaceTheme);
   }, [workspaceTheme]);
 
   // Layout Spacing Tuners (Formerly specifications config)
-  const [fontSize, setFontSize] = useState<number>(9.5); // in pt
-  const [lineHeight, setLineHeight] = useState<number>(1.2); // multiplier
-  const [margins, setMargins] = useState<number>(0.55); // in inches
-  const [sectionSpacing, setSectionSpacing] = useState<number>(8); // in px
+  const [fontSize, setFontSize] = useState<number>(11); // in pt
+  const [lineHeight, setLineHeight] = useState<number>(1.4); // multiplier
+  const [margins, setMargins] = useState<number>(0.6); // in inches
+  const [sectionSpacing, setSectionSpacing] = useState<number>(11); // in px
 
   const [fontTheme, setFontTheme] = useState<"classic-serif" | "modern-sans" | "editorial-lora">("classic-serif");
   const [resumeLayout, setResumeLayout] = useState<ResumeLayout>("classic");
@@ -569,8 +570,8 @@ export default function App() {
 
   const [documentHeight, setDocumentHeight] = useState<number>(1056);
   const [isOverflowing, setIsOverflowing] = useState<boolean>(false);
-  const [zoomScale, setZoomScale] = useState<number>(0.85);
-  const [zoomMode, setZoomMode] = useState<"fit-width" | "fit-page" | "manual">("fit-width");
+  const [zoomScale, setZoomScale] = useState<number>(0.75);
+  const [zoomMode, setZoomMode] = useState<"fit-width" | "fit-page" | "manual">("manual");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const [autoScaleHeight, setAutoScaleHeight] = useState<number>(0.65);
@@ -596,7 +597,7 @@ export default function App() {
       if (previewContainerRef.current) {
         // Height scale calculation
         const containerHeight = previewContainerRef.current.clientHeight;
-        const availableHeight = containerHeight - 96;
+        const availableHeight = containerHeight - 150;
         if (availableHeight > 200) {
           const calculatedHeight = Math.min(Math.max(availableHeight / paperHeightPx, 0.35), 1.2);
           setAutoScaleHeight(calculatedHeight);
@@ -627,7 +628,7 @@ export default function App() {
 
   const effectiveZoom =
     zoomMode === "fit-page"
-      ? autoScaleHeight
+      ? Math.min(autoScaleWidth, autoScaleHeight)
       : zoomMode === "fit-width"
         ? autoScaleWidth
         : zoomScale;
@@ -1131,6 +1132,7 @@ export default function App() {
 
   const updateCustomTemplateDraft = <K extends keyof CustomTemplateConfig>(key: K, value: CustomTemplateConfig[K]) => {
     setCustomTemplateDraft((prev) => ({ ...prev, [key]: value }));
+    setActiveCustomTemplateId("draft");
   };
 
   const toggleCustomSection = (section: CustomSectionKey) => {
@@ -1141,6 +1143,7 @@ export default function App() {
         : [...prev.sections, section];
       return { ...prev, sections: sections.length ? sections : [section] };
     });
+    setActiveCustomTemplateId("draft");
   };
 
   const moveCustomSection = (section: CustomSectionKey, direction: -1 | 1) => {
@@ -1152,6 +1155,7 @@ export default function App() {
       [sections[index], sections[nextIndex]] = [sections[nextIndex], sections[index]];
       return { ...prev, sections };
     });
+    setActiveCustomTemplateId("draft");
   };
 
   // Setup UI Theme Colors
@@ -1171,15 +1175,15 @@ export default function App() {
     : "text-slate-800 border-slate-200 bg-white/60 backdrop-blur-md";
 
   const sidebarClass = isDark
-    ? "lg:col-span-12 xl:col-span-5 flex flex-col gap-6 text-[#ebd9cd] h-full xl:max-h-[calc(100vh-112px)] xl:overflow-y-auto xl:pr-2 overscroll-contain"
-    : "lg:col-span-12 xl:col-span-5 flex flex-col gap-6 text-slate-800 h-full xl:max-h-[calc(100vh-112px)] xl:overflow-y-auto xl:pr-2 overscroll-contain";
+    ? "lg:col-span-12 xl:col-span-5 flex flex-col gap-5 text-[#ebd9cd] h-full xl:max-h-[calc(100vh-112px)] xl:overflow-y-auto xl:pr-2 overscroll-contain"
+    : "lg:col-span-12 xl:col-span-5 flex flex-col gap-5 text-slate-800 h-full xl:max-h-[calc(100vh-112px)] xl:overflow-y-auto xl:pr-2 overscroll-contain";
 
   const titleTextClass = isDark ? "text-neutral-50 font-display" : "text-slate-900 font-display font-extrabold";
   const subTitleTextClass = isDark ? "text-neutral-400 font-mono" : "text-slate-500 font-mono";
 
   const cardBgClass = isDark
     ? "w-full bg-zinc-900/90 border border-zinc-805 rounded-2xl p-4 space-y-4 shadow-xl text-left transition-colors duration-205"
-    : "w-full bg-white/95 border border-sky-100 shadow-[0_16px_50px_rgba(14,165,233,0.08)] hover:shadow-[0_20px_60px_rgba(14,165,233,0.12)] rounded-2xl p-6 space-y-4 text-left text-slate-800 transition-all duration-200";
+    : "w-full bg-white/95 border border-sky-100 shadow-[0_16px_50px_rgba(14,165,233,0.08)] hover:shadow-[0_20px_60px_rgba(14,165,233,0.12)] rounded-2xl p-4 space-y-4 text-left text-slate-800 transition-all duration-200";
 
   const textLabelClass = isDark ? "text-neutral-400 font-semibold text-[11px]" : "text-slate-500 font-bold text-[11px]";
   const selectElementClass = isDark
@@ -1192,7 +1196,7 @@ export default function App() {
 
   const previewColumnBgClass = isDark
     ? "flex flex-col items-center bg-zinc-905/10 rounded-2xl border border-zinc-850 p-4 w-full h-full xl:max-h-[calc(100vh-112px)] overflow-hidden"
-    : "flex flex-col items-center bg-white/95 rounded-2xl border border-sky-100 p-6 w-full h-full shadow-[0_16px_50px_rgba(14,165,233,0.08)] xl:max-h-[calc(100vh-112px)] overflow-hidden";
+    : "flex flex-col items-center bg-white/95 rounded-2xl border border-sky-100 p-4 w-full h-full shadow-[0_16px_50px_rgba(14,165,233,0.08)] xl:max-h-[calc(100vh-112px)] overflow-hidden";
 
   const presetBtnClass = (active: boolean) => {
     if (active) {
@@ -2149,7 +2153,7 @@ export default function App() {
             );
           })() : (<>
           {/* Workspace Split Layout */}
-          <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full xl:h-[calc(100vh-112px)] xl:overflow-hidden">
+          <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full xl:h-[calc(100vh-112px)] xl:overflow-hidden">
 
             {/* Sidebar controls (Left Column) - shown for all logged-in users */}
             {sidebarOpen && (
@@ -2199,7 +2203,6 @@ export default function App() {
                     </button>
                   </div>
                 )}
-
                 {/* Spacing specifications tuner */}
                 <div className={cardBgClass}>
                   <div className="border-b pb-2 flex justify-between items-center border-slate-200/50 dark:border-slate-800">
@@ -2622,10 +2625,32 @@ export default function App() {
                   </div>
 
                   <textarea
-                    value={customTemplateDraft.sections.map((section, idx) => `${idx + 1}. ${customSectionLabels[section]}`).join("\n")}
-                    readOnly
-                    rows={4}
-                    className={`w-full rounded-xl border px-3 py-2 text-[10px] font-mono focus:outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-slate-300" : "bg-white border-slate-200 text-slate-600 shadow-2xs"}`}
+                    key={customTemplateDraft.sections.join('-')}
+                    defaultValue={customTemplateDraft.sections.map((section, idx) => `${idx + 1}. ${customSectionLabels[section]}`).join("\n")}
+                    onBlur={(e) => {
+                      const lines = e.target.value.split('\n');
+                      const newSections: CustomSectionKey[] = [];
+                      const reverseMap: Record<string, CustomSectionKey> = {};
+                      Object.entries(customSectionLabels).forEach(([k, v]) => {
+                        reverseMap[v.toLowerCase()] = k as CustomSectionKey;
+                      });
+                      
+                      lines.forEach(line => {
+                         const cleaned = line.replace(/^\d+\.\s*/, '').trim().toLowerCase();
+                         if (reverseMap[cleaned] && !newSections.includes(reverseMap[cleaned])) {
+                            newSections.push(reverseMap[cleaned]);
+                         }
+                      });
+                      if (newSections.length > 0) {
+                         setCustomTemplateDraft(prev => ({ ...prev, sections: newSections }));
+                         setActiveCustomTemplateId("draft");
+                      } else {
+                         e.target.value = customTemplateDraft.sections.map((section, idx) => `${idx + 1}. ${customSectionLabels[section]}`).join("\n");
+                      }
+                    }}
+                    placeholder="E.g.&#10;1. Summary&#10;2. Experience&#10;3. Projects"
+                    rows={6}
+                    className={`w-full rounded-xl border px-3 py-2 text-[10px] font-mono focus:outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-slate-300 focus:border-sky-500/50" : "bg-white border-slate-200 text-slate-600 shadow-2xs focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all"}`}
                   />
                   <div className="flex gap-2 flex-wrap">
                     <button onClick={saveCustomTemplate} className={presetBtnClass(false)}>Save Template</button>
@@ -2641,7 +2666,6 @@ export default function App() {
                     </div>
                   )}
                 </div>
-
               </div>
             )}
 
@@ -2651,7 +2675,7 @@ export default function App() {
               className={`${sidebarOpen ? "lg:col-span-12 xl:col-span-7" : "lg:col-span-12 xl:col-span-12"} ${previewColumnBgClass}`}
             >
               {/* Document Interactive Controller Toolbar */}
-              <div className={`w-full mb-4 p-2.5 rounded-2xl border flex flex-col xl:flex-row items-center justify-between gap-3 text-xs ${isDark ? "bg-slate-950/80 border-slate-900 text-slate-300" : "bg-white border-slate-205 text-slate-705 shadow-sm"
+              <div className={`w-full mb-3 p-2 rounded-2xl border flex flex-col 2xl:flex-row items-center justify-between gap-2 text-xs ${isDark ? "bg-slate-950/80 border-slate-900 text-slate-300" : "bg-white border-slate-205 text-slate-705 shadow-sm"
                 }`}>
                 {/* Visual indicator */}
                 <div className="flex items-center gap-2 font-semibold">
@@ -2661,7 +2685,6 @@ export default function App() {
 
                 {/* Main controls group */}
                 <div className="flex items-center gap-2 flex-wrap justify-center">
-
                   {/* Collapse / Expand Sidebar Toggle */}
                   <>
                     <button
@@ -2764,14 +2787,14 @@ export default function App() {
                 </div>
 
                 {/* Helpful Tip Badge */}
-                <div className="hidden xl:flex items-center gap-1 font-mono text-[9.5px] text-slate-500 tracking-wide">
+                <div className="hidden 2xl:flex items-center gap-1 font-mono text-[9.5px] text-slate-500 tracking-wide">
                   <span>💡 Tip:</span>
                   <span className={isDark ? "text-slate-400" : "text-slate-600"}>Hover over page to magnify text!</span>
                 </div>
               </div>
 
               {/* Simulated letter paper sheet */}
-              <div className="w-full flex-1 min-h-0 overflow-auto flex justify-center py-0.5 select-text">
+              <div className="w-full flex-1 min-h-0 overflow-auto flex justify-center items-start py-4 select-text">
                 <div
                   className={`print-wrapper relative overflow-visible mx-auto flex justify-center py-2 shrink-0 rounded-sm bg-white ${isDark ? "shadow-2xl border border-slate-850" : "shadow-md border border-slate-200"
                     }`}

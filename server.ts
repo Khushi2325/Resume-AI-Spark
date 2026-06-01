@@ -677,7 +677,7 @@ CRITICAL TONE & CONVERSATIONAL RULES (STRICT COMPLIANCE REQUIRED):
    - Make your normal conversation text sound human, polished, and friendly.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: [
         {
           role: "user",
@@ -723,7 +723,7 @@ Return only valid JSON in this shape:
 Use exactly three recommendations. layout must be one of classic, two-column, bold-banner, tabular, cv-academic, minimal.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: { temperature: 0.25 },
     });
@@ -758,7 +758,7 @@ Return only valid JSON:
 {"report":{"parsability":85,"grammar":90,"repetition":78,"summary":"one sentence","fixes":["specific fix 1","specific fix 2","specific fix 3"]}}`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: { temperature: 0.2 },
     });
