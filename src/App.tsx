@@ -1231,19 +1231,16 @@ export default function App() {
 
     const landingBgClass = isDark
       ? "min-h-screen bg-[#0b0c10] text-[#f4f4f3] flex flex-col font-sans select-text antialiased transition-colors duration-200 relative overflow-hidden"
-      : "min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col font-sans select-text antialiased transition-colors duration-200 relative overflow-hidden";
+      : "min-h-screen bg-white text-slate-900 flex flex-col font-sans select-text antialiased transition-colors duration-200 relative overflow-hidden";
 
     return (
       <div className={landingBgClass}>
         {/* Glowing background blur circles */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 fixed">
-          <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] animate-pulse duration-[8s] ${isDark ? "bg-indigo-500/10" : "bg-indigo-600/5"
+          <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] animate-pulse duration-[8s] ${isDark ? "bg-indigo-500/10" : "bg-transparent"
             }`} />
-          <div className={`absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] animate-pulse duration-[10s] ${isDark ? "bg-purple-500/10" : "bg-purple-600/5"
+          <div className={`absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] animate-pulse duration-[10s] ${isDark ? "bg-purple-500/10" : "bg-transparent"
             }`} />
-          {!isDark && (
-            <div className="absolute top-[40%] right-[10%] w-[40vw] h-[40vw] rounded-full blur-[100px] bg-blue-500/5 animate-pulse duration-[12s]" />
-          )}
         </div>
 
         {/* ================= HEADER BAR ================= */}
@@ -1296,15 +1293,15 @@ export default function App() {
                 </span>
               </h1>
 
-              <p className={`max-w-4xl text-base leading-8 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                Welcome to <strong className="font-bold text-slate-800 dark:text-slate-200">Resume AI Spark</strong>, an elite interactive CV ecosystem.
+              <p className={`max-w-4xl text-base leading-8 ${isDark ? "text-slate-400" : "text-slate-700"}`}>
+                Welcome to <strong className="font-bold text-black dark:text-slate-200">Resume AI Spark</strong>, an elite interactive CV ecosystem.
                 Move beyond static templates with real-time PDF builders, smart page-overflow budget checkers,
                 isolated account workspaces, and a smart AI chatbot companion that proofreads and applies metric rewrites in 1-click.
               </p>
             </div>
 
             {/* INTERACTIVE DEMO SANDBOX WIDGET */}
-            <div className={`w-full border rounded-2xl p-6 space-y-5 transition-all duration-300 shadow-sm ${isDark ? "bg-zinc-900/90 border-zinc-800" : "bg-white/80 backdrop-blur-xl border-white/50"}`}>
+            <div className={`w-full border rounded-2xl p-6 space-y-5 transition-all duration-300 shadow-sm ${isDark ? "bg-zinc-900/90 border-zinc-800" : "bg-white border-slate-200 shadow-md shadow-slate-200/50"}`}>
               <div className="flex items-center justify-between">
                 <h3 className={`text-sm font-black tracking-wide flex items-center gap-2 ${isDark ? "text-slate-350" : "text-slate-800"}`}>
                   <Sliders size={15} className="text-indigo-600 dark:text-sky-500" />
@@ -1556,7 +1553,7 @@ export default function App() {
 
           {/* RIGHT COLUMN: AUTHENTICATION PANEL */}
           <div className="lg:col-span-5 w-full flex flex-col justify-center">
-            <div className={`p-6 sm:p-8 rounded-2xl border relative text-left w-full ${isDark ? "bg-zinc-900 border-zinc-800 shadow-2xl" : "bg-white/80 backdrop-blur-xl border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-slate-800"
+            <div className={`p-6 sm:p-8 rounded-2xl border relative text-left w-full ${isDark ? "bg-zinc-900 border-zinc-800 shadow-2xl" : "bg-white border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.08)] text-slate-800"
               }`}>
 
               {/* Tab Selector for Login/Register */}
