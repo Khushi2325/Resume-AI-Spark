@@ -2173,6 +2173,9 @@ export default function App() {
                         Saves to profile
                       </span>
                     </div>
+                    <p className={`text-[10px] mb-2 px-1 italic animate-pulse ${isDark ? "text-sky-400/80" : "text-sky-600/80"}`}>
+                      Tip: Click a section below to edit its content!
+                    </p>
 
                     <ResumeDataEditor
                       data={resumeData}
@@ -2685,7 +2688,13 @@ export default function App() {
                     </button>
 
                     <button
-                      onClick={handleAnalyzeResumeQuality}
+                      onClick={() => {
+                        if (qualityReport) {
+                          setQualityReport(null);
+                        } else {
+                          handleAnalyzeResumeQuality();
+                        }
+                      }}
                       disabled={isAnalyzingQuality}
                       className={`px-2.5 py-1.5 rounded-xl border font-bold text-[10.5px] tracking-wide cursor-pointer transition-all flex items-center gap-1.5 ${
                         isAnalyzingQuality || qualityReport
@@ -2696,7 +2705,7 @@ export default function App() {
                       }`}
                     >
                       <CheckCircle size={12.5} className={isAnalyzingQuality || qualityReport ? "text-emerald-500" : ""} />
-                      <span>{isAnalyzingQuality ? "Analyzing..." : "Run AI Check"}</span>
+                      <span>{isAnalyzingQuality ? "Analyzing..." : qualityReport ? "Hide AI Scores" : "Run AI Check"}</span>
                     </button>
 
                     <div className={`h-4 w-[1px] ${isDark ? "bg-slate-850" : "bg-slate-205"}`} />
