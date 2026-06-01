@@ -2572,6 +2572,9 @@ export default function App() {
 
                   <div className="space-y-2">
                     <label className={`block text-[10px] font-bold uppercase tracking-wide font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>Sections & Order (Drag to rearrange)</label>
+                    <p className={`text-[10px] italic animate-pulse ${isDark ? "text-sky-400/80" : "text-sky-600/80"}`}>
+                      Tip: Click a section to hide or show it on your resume!
+                    </p>
                     <div className="space-y-1.5">
                       {customTemplateDraft.sections.map((section, index) => {
                         const active = true; // Sections in this array are active by definition of the draft. But wait, `customTemplateDraft.sections` only contains active ones?
