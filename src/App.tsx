@@ -49,7 +49,8 @@ import {
   Twitter,
   Heart,
   Check,
-  Phone
+  Phone,
+  GripVertical
 } from "lucide-react";
 
 const ACCOUNTS_STORAGE_KEY = "khushi-spark-user-accounts";
@@ -570,6 +571,7 @@ export default function App() {
 
   const [documentHeight, setDocumentHeight] = useState<number>(1056);
   const [isOverflowing, setIsOverflowing] = useState<boolean>(false);
+  const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
   const [zoomScale, setZoomScale] = useState<number>(0.75);
   const [zoomMode, setZoomMode] = useState<"fit-width" | "fit-page" | "manual">("manual");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
@@ -2495,45 +2497,6 @@ export default function App() {
                   )}
                 </div>
 
-                <div className={cardBgClass}>
-                  <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
-                    <h4 className={sectionSubHeadingClass}>
-                      <CheckCircle size={11} className="text-emerald-500" />
-                      AI Resume Scores
-                    </h4>
-                    <button onClick={handleAnalyzeResumeQuality} disabled={isAnalyzingQuality} className="text-[10px] font-bold text-sky-500 hover:underline">
-                      {isAnalyzingQuality ? "Analyzing..." : "Run AI Check"}
-                    </button>
-                  </div>
-
-                  {qualityReport ? (
-                    <div className="space-y-3">
-                      {[
-                        ["Parsability", qualityReport.parsability],
-                        ["Grammar", qualityReport.grammar],
-                        ["Repetition", qualityReport.repetition],
-                      ].map(([label, value]) => (
-                        <div key={label as string} className="space-y-1">
-                          <div className="flex justify-between text-[11px] font-bold">
-                            <span className={textLabelClass}>{label}</span>
-                            <span className="font-mono text-sky-500">{value as number}%</span>
-                          </div>
-                          <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-zinc-950" : "bg-slate-100"}`}>
-                            <div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${value as number}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                      <p className={`text-[10px] leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>{qualityReport.summary}</p>
-                      <ul className={`list-disc pl-4 text-[10px] space-y-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                        {qualityReport.fixes?.map((fix, idx) => <li key={idx}>{fix}</li>)}
-                      </ul>
-                    </div>
-                  ) : (
-                    <p className={`text-[10px] leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                      Run the AI check to score ATS parsability, technical grammar, and repeated wording.
-                    </p>
-                  )}
-                </div>
 
                 <div className={cardBgClass}>
                   <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
@@ -2605,53 +2568,68 @@ export default function App() {
                   </button>
 
                   <div className="space-y-2">
-                    <label className={`block text-[10px] font-bold uppercase tracking-wide font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>Sections & Order</label>
+                    <label className={`block text-[10px] font-bold uppercase tracking-wide font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>Sections & Order (Drag to rearrange)</label>
                     <div className="space-y-1.5">
-                      {(Object.keys(customSectionLabels) as CustomSectionKey[]).map((section) => {
-                        const active = customTemplateDraft.sections.includes(section);
-                        return (
-                          <div key={section} className={`flex items-center justify-between gap-2 rounded-xl border px-2 py-1.5 ${active ? "border-sky-500/40 bg-sky-500/10" : isDark ? "border-zinc-800 bg-zinc-950" : "border-slate-200 bg-white"}`}>
-                            <button type="button" onClick={() => toggleCustomSection(section)} className={`text-left text-xs font-bold flex-1 ${active ? "text-sky-400" : isDark ? "text-slate-400" : "text-slate-600"}`}>
-                              {customSectionLabels[section]}
-                            </button>
-                            <div className="flex gap-1">
-                              <button type="button" onClick={() => moveCustomSection(section, -1)} disabled={!active} className={presetBtnClass(false)}>Up</button>
-                              <button type="button" onClick={() => moveCustomSection(section, 1)} disabled={!active} className={presetBtnClass(false)}>Down</button>
-                            </div>
-                          </div>
-                        );
+                      {customTemplateDraft.sections.map((section, index) => {
+                        const active = true; // Sections in this array are active by definition of the draft. But wait, `customTemplateDraft.sections` only contains active ones?
+                        // Actually, previously it mapped over `Object.keys(customSectionLabels)`
+                        // Let's preserve the original behavior of showing all sections, but ordered.
+                        return null;
                       })}
+                      {(() => {
+                        // Create an ordered list of all sections: first the active ones in order, then the inactive ones.
+                        const activeSections = customTemplateDraft.sections;
+                        const allSections = Object.keys(customSectionLabels) as CustomSectionKey[];
+                        const inactiveSections = allSections.filter(s => !activeSections.includes(s));
+                        const displaySections = [...activeSections, ...inactiveSections];
+
+                        return displaySections.map((section, index) => {
+                          const active = activeSections.includes(section);
+                          return (
+                            <div 
+                              key={section} 
+                              draggable
+                              onDragStart={(e) => {
+                                setDraggedSectionIndex(index);
+                                e.dataTransfer.effectAllowed = "move";
+                                e.currentTarget.style.opacity = '0.5';
+                              }}
+                              onDragEnd={(e) => {
+                                setDraggedSectionIndex(null);
+                                e.currentTarget.style.opacity = '1';
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = "move";
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                if (draggedSectionIndex === null || draggedSectionIndex === index) return;
+                                
+                                const newDisplayOrder = [...displaySections];
+                                const draggedItem = newDisplayOrder[draggedSectionIndex];
+                                newDisplayOrder.splice(draggedSectionIndex, 1);
+                                newDisplayOrder.splice(index, 0, draggedItem);
+                                
+                                // Keep only the active ones, but in the new order
+                                const newActiveSections = newDisplayOrder.filter(s => activeSections.includes(s));
+                                setCustomTemplateDraft(prev => ({ ...prev, sections: newActiveSections }));
+                                setActiveCustomTemplateId("draft");
+                              }}
+                              className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 cursor-grab active:cursor-grabbing transition-transform ${
+                                draggedSectionIndex === index ? "scale-105 shadow-lg z-10 relative" : ""
+                              } ${active ? "border-sky-500/40 bg-sky-500/10" : isDark ? "border-zinc-800 bg-zinc-950" : "border-slate-200 bg-white"}`}
+                            >
+                              <GripVertical size={14} className={isDark ? "text-slate-600" : "text-slate-400"} />
+                              <button type="button" onClick={() => toggleCustomSection(section)} className={`text-left text-xs font-bold flex-1 ${active ? "text-sky-400" : isDark ? "text-slate-400" : "text-slate-600"}`}>
+                                {customSectionLabels[section]}
+                              </button>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
-
-                  <textarea
-                    key={customTemplateDraft.sections.join('-')}
-                    defaultValue={customTemplateDraft.sections.map((section, idx) => `${idx + 1}. ${customSectionLabels[section]}`).join("\n")}
-                    onBlur={(e) => {
-                      const lines = e.target.value.split('\n');
-                      const newSections: CustomSectionKey[] = [];
-                      const reverseMap: Record<string, CustomSectionKey> = {};
-                      Object.entries(customSectionLabels).forEach(([k, v]) => {
-                        reverseMap[v.toLowerCase()] = k as CustomSectionKey;
-                      });
-                      
-                      lines.forEach(line => {
-                         const cleaned = line.replace(/^\d+\.\s*/, '').trim().toLowerCase();
-                         if (reverseMap[cleaned] && !newSections.includes(reverseMap[cleaned])) {
-                            newSections.push(reverseMap[cleaned]);
-                         }
-                      });
-                      if (newSections.length > 0) {
-                         setCustomTemplateDraft(prev => ({ ...prev, sections: newSections }));
-                         setActiveCustomTemplateId("draft");
-                      } else {
-                         e.target.value = customTemplateDraft.sections.map((section, idx) => `${idx + 1}. ${customSectionLabels[section]}`).join("\n");
-                      }
-                    }}
-                    placeholder="E.g.&#10;1. Summary&#10;2. Experience&#10;3. Projects"
-                    rows={6}
-                    className={`w-full rounded-xl border px-3 py-2 text-[10px] font-mono focus:outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-slate-300 focus:border-sky-500/50" : "bg-white border-slate-200 text-slate-600 shadow-2xs focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all"}`}
-                  />
                   <div className="flex gap-2 flex-wrap">
                     <button onClick={saveCustomTemplate} className={presetBtnClass(false)}>Save Template</button>
                     <button onClick={() => setActiveCustomTemplateId("")} className={presetBtnClass(!activeCustomTemplateId)}>Built-in Style</button>
@@ -2881,6 +2859,51 @@ export default function App() {
                     );
                   })()}
                 </div>
+              </div>
+
+              {/* ATS Resume Check Block */}
+              <div className={`mt-6 rounded-3xl border shadow-sm p-4 lg:p-5 flex flex-col gap-4 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-sky-100"}`}>
+                  <div className="flex justify-between items-center border-b pb-2.5 border-slate-200/50 dark:border-slate-800">
+                    <h4 className={`text-sm font-bold flex items-center gap-1.5 ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                      <CheckCircle size={14} className="text-emerald-500" />
+                      AI Resume Scores
+                    </h4>
+                    <button onClick={handleAnalyzeResumeQuality} disabled={isAnalyzingQuality} className="text-xs font-bold text-sky-500 hover:underline">
+                      {isAnalyzingQuality ? "Analyzing..." : "Run AI Check"}
+                    </button>
+                  </div>
+
+                  {qualityReport ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        ["Parsability", qualityReport.parsability],
+                        ["Grammar", qualityReport.grammar],
+                        ["Repetition", qualityReport.repetition],
+                      ].map(([label, value]) => (
+                        <div key={label as string} className="space-y-1.5">
+                          <div className="flex justify-between text-xs font-bold">
+                            <span className={isDark ? "text-slate-400" : "text-slate-600"}>{label}</span>
+                            <span className="font-mono text-sky-500">{value as number}%</span>
+                          </div>
+                          <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-zinc-950" : "bg-slate-100"}`}>
+                            <div className="h-full bg-gradient-to-r from-sky-500 to-emerald-500" style={{ width: `${value as number}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                      <div className="md:col-span-3 space-y-2 mt-2">
+                         <p className={`text-xs leading-relaxed font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>{qualityReport.summary}</p>
+                         {qualityReport.fixes && qualityReport.fixes.length > 0 && (
+                           <ul className={`list-disc pl-5 text-xs space-y-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                             {qualityReport.fixes.map((fix, idx) => <li key={idx}>{fix}</li>)}
+                           </ul>
+                         )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={`text-xs leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      Run the AI check to score ATS parsability, technical grammar, and repeated wording. The results will appear here.
+                    </p>
+                  )}
               </div>
 
             </div>
