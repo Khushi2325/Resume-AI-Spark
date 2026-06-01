@@ -1,112 +1,581 @@
 <div align="center">
-  <img src="app-icon.svg" alt="Resume AI Spark Logo" width="120" />
-  <h1>Resume AI Spark</h1>
-  <p>A comprehensive, interactive, and AI-powered resume builder designed to help software engineers and professionals craft highly effective resumes.</p>
+
+<img src="app-icon.svg" alt="Resume AI Spark Logo" width="130"/>
+
+# Resume AI Spark
+
+### AI-Powered Resume Builder with Real-Time Preview, Resume Analysis, PDF Import, and Secure Cloud Storage
+
+Resume AI Spark is a modern web application that helps students, job seekers, and professionals create polished, ATS-friendly resumes without struggling with formatting, templates, or repetitive editing.
+
+The platform combines real-time resume building, AI-assisted content enhancement, PDF importing, resume quality analysis, and secure cloud storage into a single seamless experience.
+
+Rather than spending hours adjusting layouts and rewriting bullet points, users can focus on showcasing their skills, achievements, and professional journey while the platform handles the technical complexity.
+
 </div>
 
-<br />
+---
 
-Resume AI Spark is built to eliminate the frustration of formatting static resume templates. It is a full-featured application that combines real-time PDF rendering, strict page-overflow monitoring, and an integrated AI companion to help you write professional, ATS-friendly bullet points.
+# Table of Contents
 
-Whether you are starting from scratch or importing an old resume, this tool provides an isolated, secure workspace to refine your professional profile and export a clean PDF.
+- Overview
+- Motivation
+- Features
+- How It Works
+- Technology Stack
+- Architecture
+- Core Functionalities
+- AI Capabilities
+- Security & Authentication
+- Database Design
+- Installation
+- Environment Variables
+- Running Locally
+- Deployment
+- Challenges Solved
+- Future Improvements
+- Contributing
+- License
 
 ---
 
-## Comprehensive Feature List
+# Overview
 
-### 1. Interactive Real-Time Builder
-The core of the application is a side-by-side interactive editor. As you add or edit your work experience, education, or skills, the PDF renders your changes instantly. You never have to guess what the final layout will look like.
+Resume AI Spark was created to simplify one of the most frustrating tasks for students and professionals: creating and maintaining a high-quality resume.
 
-### 2. Smart PDF Import & Parsing
-If you already have a resume, you don't need to type everything from scratch. The application features a robust backend parser that reads your existing PDF, extracts the text and embedded hyperlinks, and smartly maps them into the interactive builder. 
+Many resume builders suffer from several common limitations:
 
-### 3. Spark AI Companion
-Instead of just giving you a text box, Resume AI Spark includes a fully integrated AI assistant (powered by Google Gemini). 
-- **1-Click Rewrites:** Ask the AI to rewrite a bullet point to sound more professional, and you can apply the change to your resume with a single click.
-- **Metric Enhancements:** The AI helps you identify areas where you can add quantifiable metrics to improve your impact.
-- **Quality Scoring:** The system can evaluate your resume's grammar, parsability, and repetition, giving you a tangible score to improve upon.
+- Limited customization
+- Expensive premium subscriptions
+- Poor AI assistance
+- Weak ATS compatibility
+- Difficult formatting controls
+- No resume quality feedback
 
-### 4. Supabase Authentication & Private Workspaces
-Security and data privacy are treated as first-class features. The app utilizes Supabase to provide secure OAuth sign-in via Google or GitHub. Once logged in, every user is provided with their own isolated database sandbox secured by Row Level Security (RLS) policies, meaning your data is strictly yours.
+Resume AI Spark addresses these issues by combining modern web technologies with artificial intelligence to provide a complete resume creation and improvement platform.
 
-### 5. Smart Space Budgeting
-One of the most common resume mistakes is accidentally bleeding content onto a second page. Resume AI Spark includes a visual space budgeting system that calculates exactly how much room you have left, warning you before your resume overflows the standard one-page limit.
+Users can:
 
-### 6. JSON Backup & Restore
-You have full ownership of your data. At any time, you can export your entire resume structure as a lightweight JSON file. You can keep this on your local machine and import it back into the app whenever you need to make future updates.
-
----
-
-## Technical Architecture
-
-The application is split between a lightning-fast React frontend and a Node.js Express backend designed to handle intensive native tasks like PDF binary parsing.
-
-- **Frontend:** React 18, TypeScript, Vite
-- **Styling:** Tailwind CSS, Lucide React (for iconography)
-- **AI Engine:** Google Gemini SDK (`gemini-2.5-flash`)
-- **Backend:** Node.js, Express, `pdf-parse` (with native Canvas bindings for accurate text extraction)
-- **Database & Auth:** Supabase (PostgreSQL, OAuth)
-- **Production Bundler:** ESBuild (with externalized packages for native binary support)
+- Create resumes from scratch
+- Import existing resumes
+- Edit content interactively
+- Receive AI-powered suggestions
+- Analyze resume quality
+- Export professional PDFs
+- Save resumes securely online
 
 ---
 
-## Local Development Setup
+# Motivation
 
-If you want to run Resume AI Spark locally to test or contribute, follow these instructions to set up the environment.
+Building a resume should not require design expertise.
 
-### 1. Clone the repository
+Many talented students and professionals struggle to present their achievements effectively because they spend more time fighting formatting issues than improving content.
+
+Resume AI Spark was designed to remove these barriers.
+
+The goal is simple:
+
+> Help people build stronger resumes faster while maintaining complete ownership of their content.
+
+---
+
+# Features
+
+## Interactive Resume Builder
+
+The application provides a clean and intuitive editing experience.
+
+Users can:
+
+- Add personal information
+- Manage education details
+- Showcase projects
+- Add certifications
+- Highlight technical skills
+- Create professional experience sections
+
+All updates are reflected immediately in the preview.
+
+---
+
+## Real-Time PDF Preview
+
+Resume AI Spark provides instant PDF rendering.
+
+As users modify their resume:
+
+- Layout updates automatically
+- Formatting changes appear instantly
+- Page structure remains visible
+- Final output remains predictable
+
+This eliminates the need for repeated exports during editing.
+
+---
+
+## Smart PDF Import
+
+Already have a resume?
+
+Simply upload an existing PDF.
+
+The application intelligently extracts:
+
+- Resume content
+- Hyperlinks
+- Structured sections
+- Important information
+
+Imported content is automatically mapped into editable fields, reducing manual work significantly.
+
+---
+
+## Resume Quality Analysis
+
+The platform evaluates resume quality using multiple criteria.
+
+### Grammar Evaluation
+
+Identifies:
+
+- Grammar issues
+- Sentence structure problems
+- Writing inconsistencies
+
+### Content Strength Analysis
+
+Evaluates:
+
+- Achievement-focused language
+- Action verbs
+- Professional tone
+
+### Repetition Detection
+
+Highlights repeated phrases that may weaken resume impact.
+
+### ATS Compatibility Review
+
+Analyzes how effectively the resume may perform inside Applicant Tracking Systems.
+
+### Resume Score
+
+Provides an overall score that helps users track improvements over time.
+
+---
+
+## Smart Space Budgeting
+
+One of the most useful features of Resume AI Spark.
+
+Many users accidentally overflow content onto additional pages.
+
+The application continuously monitors available space and provides warnings before content exceeds the recommended one-page format.
+
+Benefits include:
+
+- Better readability
+- Cleaner formatting
+- Improved recruiter experience
+- Stronger resume presentation
+
+---
+
+## JSON Backup & Restore
+
+Users maintain complete ownership of their data.
+
+Resume AI Spark allows:
+
+- JSON exports
+- Local backups
+- Easy restoration
+- Resume portability
+
+This ensures users never lose their work.
+
+---
+
+## Secure Authentication
+
+Authentication is handled using Supabase.
+
+Supported providers:
+
+- Google
+- GitHub
+
+Users can securely access their resumes across multiple devices.
+
+---
+
+## Personal Cloud Workspace
+
+Every authenticated user receives a private workspace.
+
+Users can:
+
+- Save resumes
+- Continue editing later
+- Access data from different devices
+- Maintain multiple resume versions
+
+---
+
+# How It Works
+
+```text
+User Login
+     │
+     ▼
+Create Resume / Import PDF
+     │
+     ▼
+Edit Resume Content
+     │
+     ▼
+AI Analysis & Suggestions
+     │
+     ▼
+Resume Quality Evaluation
+     │
+     ▼
+Real-Time PDF Preview
+     │
+     ▼
+Export Professional Resume
+```
+
+---
+
+# Technology Stack
+
+## Frontend
+
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- Lucide React
+
+## Backend
+
+- Node.js
+- Express.js
+
+## Artificial Intelligence
+
+- Google Gemini API
+- Gemini 2.5 Flash
+
+## Database
+
+- PostgreSQL
+- Supabase
+
+## Authentication
+
+- Supabase Auth
+- Google OAuth
+- GitHub OAuth
+
+## PDF Processing
+
+- pdf-parse
+- Native Canvas Bindings
+
+## Build Tools
+
+- Vite
+- ESBuild
+
+---
+
+# Architecture
+
+```text
+┌─────────────────────────┐
+│        Frontend         │
+│ React + TypeScript      │
+└─────────────┬───────────┘
+              │
+              ▼
+┌─────────────────────────┐
+│      Express Server     │
+└───────┬────────┬────────┘
+        │        │
+        ▼        ▼
+
+   Gemini AI   Supabase
+
+        │
+        ▼
+
+   PDF Parser Engine
+```
+
+---
+
+# Core Functionalities
+
+## Resume Creation
+
+Build resumes from scratch using structured forms and dynamic sections.
+
+---
+
+## Resume Editing
+
+Modify content at any time with instant visual feedback.
+
+---
+
+## Resume Importing
+
+Convert existing PDFs into editable resume data.
+
+---
+
+## Resume Exporting
+
+Generate clean, professional PDF files ready for job applications.
+
+---
+
+## Resume Storage
+
+Save resumes securely inside a cloud-based environment.
+
+---
+
+## Resume Recovery
+
+Restore previously exported JSON backups whenever needed.
+
+---
+
+# AI Capabilities
+
+Resume AI Spark integrates Google's Gemini AI to help users improve their resume content.
+
+## Professional Rewriting
+
+Transforms simple statements into stronger professional descriptions.
+
+Example:
+
+Before:
+
+```text
+Worked on website development.
+```
+
+After:
+
+```text
+Developed and optimized responsive web applications, improving usability and overall performance.
+```
+
+---
+
+## Grammar Enhancement
+
+Improves:
+
+- Grammar
+- Readability
+- Clarity
+- Professional tone
+
+---
+
+## Impact Suggestions
+
+Helps users add measurable achievements and stronger action-oriented language.
+
+---
+
+## Content Refinement
+
+Makes bullet points more concise, effective, and recruiter-friendly.
+
+---
+
+# Security & Authentication
+
+Security is treated as a first-class feature.
+
+The application uses:
+
+- Supabase Authentication
+- OAuth Sign-In
+- PostgreSQL Database
+- Row Level Security (RLS)
+
+Every user can only access their own information.
+
+This ensures complete data isolation and privacy.
+
+---
+
+# Database Design
+
+The application uses Supabase PostgreSQL for storing:
+
+- User profiles
+- Resume information
+- Resume sections
+- Backup data
+- User preferences
+
+Row Level Security policies prevent unauthorized access.
+
+---
+
+# Installation
+
+## Clone Repository
+
 ```bash
 git clone https://github.com/Khushi2325/Resume-AI-Spark.git
+
 cd Resume-AI-Spark
 ```
 
-### 2. Install dependencies
+---
+
+## Install Dependencies
+
 ```bash
 npm install
 ```
 
-### 3. Set up Environment Variables
-You will need a Supabase project and a Google Gemini API key. Create a `.env` file in the root of the project and add the following keys:
+---
+
+# Environment Variables
+
+Create a `.env` file in the project root.
 
 ```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-GEMINI_API_KEY=your-google-gemini-key
+VITE_SUPABASE_URL=YOUR_SUPABASE_URL
+
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 ```
 
-### 4. Start the Application
-To start both the Vite frontend server and the Express backend simultaneously, run:
+---
+
+# Running Locally
+
+Start the development environment:
+
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`.
+Application URL:
 
----
-
-## Supabase Database Configuration
-
-If you are setting up your own Supabase instance, you need to ensure the database can securely accept user profiles.
-
-1. Navigate to **Authentication > Providers** in your Supabase dashboard and enable **Google** and **GitHub**.
-2. Run the following SQL snippet in your Supabase SQL Editor to establish the Row Level Security (RLS) policies. This ensures users can only read and write their own data:
-
-```sql
--- Allow users to insert their own profile
-CREATE POLICY "Users can insert their own profile" 
-ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
-
--- Allow users to update their own profile
-CREATE POLICY "Users can update own profile" 
-ON profiles FOR UPDATE USING (auth.uid() = id);
+```text
+http://localhost:3000
 ```
 
 ---
 
-## Production Deployment Notes
+# Deployment
 
-When deploying this application as a Web Service (e.g., on Render), the build process utilizes `esbuild` to bundle the backend. Because the PDF parser relies on native C++ binaries, the `package.json` build script explicitly uses the `--packages=external` flag. This prevents `esbuild` from breaking the native module bindings during compression, ensuring PDF parsing works flawlessly in production.
+Resume AI Spark can be deployed on:
 
-## License
+- Render
+- Railway
+- Vercel
+- AWS
+- DigitalOcean
 
-This project is open-source and available under the [MIT License](LICENSE).
+The backend uses ESBuild with externalized native dependencies to ensure PDF parsing functions correctly in production environments.
+
+---
+
+# Challenges Solved
+
+During development, several technical challenges were addressed:
+
+### PDF Parsing
+
+Extracting structured information from uploaded resumes while preserving links and formatting.
+
+### Native Dependencies
+
+Handling PDF parsing libraries that rely on native binaries during deployment.
+
+### Real-Time Synchronization
+
+Maintaining instant synchronization between editor changes and PDF rendering.
+
+### AI Integration
+
+Creating a smooth workflow where AI-generated suggestions can be reviewed before being applied.
+
+### Data Security
+
+Implementing secure authentication and database isolation using Supabase Row Level Security.
+
+---
+
+# Future Improvements
+
+Planned enhancements include:
+
+- Multiple Resume Templates
+- Cover Letter Generator
+- Resume Version History
+- Job Description Matching
+- ATS Optimization Dashboard
+- AI Interview Preparation
+- Multi-Language Support
+- Resume Sharing Links
+- Collaborative Editing
+- Custom Themes
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+To contribute:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make improvements
+4. Commit changes
+5. Submit a Pull Request
+
+Feedback, bug reports, and feature suggestions are always appreciated.
+
+---
+
+# Project Vision
+
+Resume AI Spark is more than a resume builder.
+
+The long-term vision is to create a platform that helps people present themselves more effectively in professional environments through intelligent assistance, automation, and modern design.
+
+By combining AI, cloud technologies, and real-time feedback, Resume AI Spark aims to make professional resume creation accessible to everyone.
+
+---
+
+# License
+
+This project is licensed under the MIT License.
+
+See the `LICENSE` file for additional information.
+
+---
+
+<div align="center">
+
+Built with the goal of making resume creation simpler, smarter, and more accessible.
+
+</div>
