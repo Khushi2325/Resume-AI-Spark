@@ -128,35 +128,6 @@ interface UserAccount {
   is_authorized?: boolean;
 }
 
-const isValidEmailAddress = (email: string): boolean => {
-  const cleanEmail = email.toLowerCase().trim();
-  const basicRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanEmail);
-  if (!basicRegex) return false;
-
-  const username = cleanEmail.split('@')[0];
-  const domain = cleanEmail.split('@')[1];
-
-  // Block obvious fake or test usernames
-  const blockedPrefixes = ["test", "fake", "dummy", "helloitsme", "nobody", "admin", "user", "demo", "sample", "example"];
-  const isFakeUsername = blockedPrefixes.some(prefix => 
-    username === prefix || username.startsWith(prefix + "123") || username.startsWith(prefix + "0")
-  );
-  if (isFakeUsername) return false;
-
-  // Block common disposable email domains
-  const disposableDomains = [
-    "mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com", 
-    "yopmail.com", "throwawaymail.com", "temp-mail.org", "fakeinbox.com"
-  ];
-  if (disposableDomains.includes(domain)) return false;
-
-  return true;
-};
-
-const isValidUsername = (username: string) => {
-  return /^[a-zA-Z0-9_]{3,24}$/.test(username);
-};
-
 
 export default function App() {
   // -------------------------------------------------------------
@@ -248,10 +219,6 @@ export default function App() {
   };
 
   // Auth local inputs
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [usernameInput, setUsernameInput] = useState("");
-  const [emailInput, setEmailInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [accessCodeInput, setAccessCodeInput] = useState("");
   const [unlockCodeInput, setUnlockCodeInput] = useState("");
