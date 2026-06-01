@@ -1231,16 +1231,19 @@ export default function App() {
 
     const landingBgClass = isDark
       ? "min-h-screen bg-[#0b0c10] text-[#f4f4f3] flex flex-col font-sans select-text antialiased transition-colors duration-200 relative overflow-hidden"
-      : "min-h-screen bg-gradient-to-br from-white via-sky-50 to-blue-100 text-slate-900 flex flex-col font-sans select-text antialiased transition-colors duration-200 relative overflow-hidden";
+      : "min-h-screen bg-[#F8F9FA] text-slate-900 flex flex-col font-sans select-text antialiased transition-colors duration-200 relative overflow-hidden";
 
     return (
       <div className={landingBgClass}>
         {/* Glowing background blur circles */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <div className={`absolute top-[-15%] left-[-15%] w-[65vw] h-[65vw] rounded-full blur-[120px] animate-pulse duration-[8s] ${isDark ? "bg-indigo-500/10" : "bg-transparent"
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 fixed">
+          <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] animate-pulse duration-[8s] ${isDark ? "bg-indigo-500/10" : "bg-indigo-600/5"
             }`} />
-          <div className={`absolute bottom-[-15%] right-[-15%] w-[75vw] h-[75vw] rounded-full blur-[140px] animate-pulse duration-[10s] ${isDark ? "bg-purple-500/10" : "bg-transparent"
+          <div className={`absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[140px] animate-pulse duration-[10s] ${isDark ? "bg-purple-500/10" : "bg-purple-600/5"
             }`} />
+          {!isDark && (
+            <div className="absolute top-[40%] right-[10%] w-[40vw] h-[40vw] rounded-full blur-[100px] bg-blue-500/5 animate-pulse duration-[12s]" />
+          )}
         </div>
 
         {/* ================= HEADER BAR ================= */}
@@ -1281,30 +1284,30 @@ export default function App() {
           {/* LEFT COLUMN: PRODUCT PRESENTATION */}
           <div className="lg:col-span-7 flex flex-col space-y-8 text-left">
             <div className="space-y-4">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 text-[11px] font-mono tracking-widest font-extrabold uppercase select-none ${isDark ? "border-sky-500/20 bg-sky-500/5 text-sky-400" : "border-blue-100 bg-white text-blue-700 shadow-sm"}`}>
-                <Check size={14} className={isDark ? "text-sky-400" : "text-blue-500"} />
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 text-[11px] font-mono tracking-widest font-extrabold uppercase select-none ${isDark ? "border-sky-500/20 bg-sky-500/5 text-sky-400" : "border-indigo-100 bg-white text-indigo-700 shadow-sm"}`}>
+                <Check size={14} className={isDark ? "text-sky-400" : "text-indigo-600"} />
                 Pristine Live Page Preview
               </div>
 
-              <h1 className={`max-w-4xl text-5xl sm:text-6xl font-black leading-[1.05] tracking-tight ${isDark ? "text-white" : "text-slate-950"}`}>
+              <h1 className={`max-w-4xl text-5xl sm:text-6xl font-black leading-[1.05] tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
                 Craft Resumes that Land{" "}
-                <span className={`bg-clip-text text-transparent bg-gradient-to-r ${isDark ? "from-sky-400 via-sky-300 to-indigo-400" : "from-sky-500 via-blue-600 to-cyan-500"} drop-shadow-xs`}>
+                <span className={`bg-clip-text text-transparent bg-gradient-to-r ${isDark ? "from-sky-400 via-sky-300 to-indigo-400" : "from-indigo-600 via-purple-600 to-indigo-500"} drop-shadow-xs`}>
                   Top Tech Roles
                 </span>
               </h1>
 
-              <p className={`max-w-4xl text-base leading-8 ${isDark ? "text-slate-400" : "text-slate-700"}`}>
-                Welcome to <strong className="font-bold">Resume AI Spark</strong>, an elite interactive CV ecosystem.
+              <p className={`max-w-4xl text-base leading-8 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                Welcome to <strong className="font-bold text-slate-800 dark:text-slate-200">Resume AI Spark</strong>, an elite interactive CV ecosystem.
                 Move beyond static templates with real-time PDF builders, smart page-overflow budget checkers,
                 isolated account workspaces, and a smart AI chatbot companion that proofreads and applies metric rewrites in 1-click.
               </p>
             </div>
 
             {/* INTERACTIVE DEMO SANDBOX WIDGET */}
-            <div className={`w-full border-2 rounded-2xl p-6 space-y-5 transition-all duration-300 shadow-sm ${isDark ? "bg-zinc-900/90 border-zinc-800" : "bg-white/95 border-slate-200"}`}>
+            <div className={`w-full border rounded-2xl p-6 space-y-5 transition-all duration-300 shadow-sm ${isDark ? "bg-zinc-900/90 border-zinc-800" : "bg-white/80 backdrop-blur-xl border-white/50"}`}>
               <div className="flex items-center justify-between">
-                <h3 className={`text-sm font-black tracking-wide flex items-center gap-2 ${isDark ? "text-slate-350" : "text-blue-950"}`}>
-                  <Sliders size={15} className="text-sky-500" />
+                <h3 className={`text-sm font-black tracking-wide flex items-center gap-2 ${isDark ? "text-slate-350" : "text-slate-800"}`}>
+                  <Sliders size={15} className="text-indigo-600 dark:text-sky-500" />
                   Live Feature Showcase Sandbox
                 </h3>
                 <span className="text-[11px] text-slate-500 font-medium">Preview core tools before signing in</span>
@@ -1525,25 +1528,25 @@ export default function App() {
             {/* Checklist highlights */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-2">
               <div className="flex items-center gap-2 text-xs font-semibold">
-                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-slate-50 text-slate-700 border border-slate-200 shadow-sm"}`}>
+                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm"}`}>
                   <CheckCircle size={13} />
                 </div>
                 <span className={isDark ? "text-slate-300" : "text-slate-700"}>Instant AI Chat Expert</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold">
-                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-slate-50 text-slate-700 border border-slate-200 shadow-sm"}`}>
+                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm"}`}>
                   <CheckCircle size={13} />
                 </div>
                 <span className={isDark ? "text-slate-300" : "text-slate-700"}>Live Spacing & Spacing Tuner</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold">
-                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-slate-50 text-slate-700 border border-slate-200 shadow-sm"}`}>
+                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm"}`}>
                   <CheckCircle size={13} />
                 </div>
                 <span className={isDark ? "text-slate-305" : "text-slate-700"}>circular Lens detail Reader</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold">
-                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-slate-50 text-slate-700 border border-slate-200 shadow-sm"}`}>
+                <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm"}`}>
                   <CheckCircle size={13} />
                 </div>
                 <span className={isDark ? "text-slate-305" : "text-slate-700"}>Isolated Multi-User Sandboxes</span>
@@ -1553,49 +1556,51 @@ export default function App() {
 
           {/* RIGHT COLUMN: AUTHENTICATION PANEL */}
           <div className="lg:col-span-5 w-full flex flex-col justify-center">
-            <div className={`p-6 sm:p-8 rounded-2xl border relative text-left w-full ${isDark ? "bg-zinc-900 border-zinc-800 shadow-2xl" : "bg-white/95 border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.08)] text-slate-800"
+            <div className={`p-6 sm:p-8 rounded-2xl border relative text-left w-full ${isDark ? "bg-zinc-900 border-zinc-800 shadow-2xl" : "bg-white/80 backdrop-blur-xl border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-slate-800"
               }`}>
 
               {/* Tab Selector for Login/Register */}
-                  <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-200 dark:border-zinc-800">
+              <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-200 dark:border-zinc-800">
                 <div>
-                  <h2 className={`text-2xl font-black tracking-tight ${isDark ? "text-neutral-100" : "text-slate-950"}`}>
+                  <h2 className={`text-2xl font-black tracking-tight ${isDark ? "text-neutral-100" : "text-slate-900"}`}>
                     {authMode === "login" ? "Account Sign In" : "Register Profile"}
                   </h2>
                   <p className={`text-[11px] font-mono mt-1 uppercase tracking-wider ${isDark ? "text-neutral-400" : "text-slate-600 font-bold"}`}>
                     {authMode === "login" ? "Workspace Access" : "Create Sandbox Profile"}
                   </p>
                 </div>
-
                 <button
                   type="button"
-                  onClick={() => {
-                    setAuthMode(authMode === "login" ? "register" : "login");
-                    setAuthError("");
-                  }}
-                  className="text-slate-600 font-extrabold hover:text-blue-700 hover:underline text-sm tracking-wide cursor-pointer"
+                  onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
+                  className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border transition-all ${isDark
+                      ? "text-slate-400 border-zinc-800 hover:text-white hover:border-zinc-700 bg-zinc-900/50"
+                      : "text-slate-600 border-slate-200 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 shadow-sm"
+                    }`}
                 >
-                  {authMode === "login" ? "Register instead" : "Sign in instead"}
+                  {authMode === "login" ? "Register instead" : "Login instead"}
                 </button>
               </div>
 
-              {/* Authentication Form */}
+              {/* Actual Auth Form */}
               <form onSubmit={handleAuthSubmit} className="space-y-4">
-                {authError && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-650 font-medium">
-                    ⚠️ {authError}
-                  </div>
-                )}
+                <div className="space-y-1 text-left flex justify-center w-full">
+                  {authError && (
+                    <div className="text-red-500 bg-red-500/10 border border-red-500/20 text-[11px] font-bold px-3 py-2 rounded-xl mb-2 flex items-center justify-center gap-1.5 w-full">
+                      <AlertTriangle size={12} />
+                      {authError}
+                    </div>
+                  )}
+                </div>
 
                 <div className="space-y-1 text-left">
-                  <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
+                  <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
                     {authMode === "login" ? "Username or Email" : "Username"}
                   </label>
                   <input
                     type="text"
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
                         ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
-                        : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
+                        : "bg-white border-slate-200 text-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm"
                       }`}
                     placeholder={authMode === "login" ? "e.g. khushi or khushi@example.com" : "e.g. khushi"}
                     value={usernameInput}
@@ -1606,34 +1611,32 @@ export default function App() {
 
                 {authMode === "register" && (
                   <div className="space-y-1 text-left">
-                    <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
-                      Email Address
+                    <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                      Full Name
                     </label>
                     <input
-                      type="email"
+                      type="text"
                       className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
                           ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
-                          : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
+                          : "bg-white border-slate-200 text-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm"
                         }`}
-                      placeholder="e.g. user@example.com"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="e.g. Khushi Chorvadi"
+                      value={fullNameInput}
+                      onChange={(e) => setFullNameInput(e.target.value)}
                       required
                     />
                   </div>
                 )}
 
                 <div className="space-y-1 text-left">
-                  <div className="flex justify-between items-center">
-                    <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-505"}`}>
-                      Password
-                    </label>
-                  </div>
+                  <label className={`block text-[10px] font-mono tracking-wider font-bold uppercase ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                    Password
+                  </label>
                   <input
                     type="password"
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none placeholder:text-slate-400 ${isDark
                         ? "bg-zinc-950 border-zinc-800 text-neutral-100 focus:border-zinc-705"
-                        : "bg-white border-sky-200 text-slate-900 focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 shadow-sm"
+                        : "bg-white border-slate-200 text-slate-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-sm"
                       }`}
                     placeholder={authMode === "login" ? "Enter password" : "Configure password"}
                     value={passwordInput}
@@ -1644,7 +1647,7 @@ export default function App() {
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-950 font-extrabold text-sm py-3.5 rounded-xl shadow-lg shadow-sky-500/20 hover:shadow-xl cursor-pointer transition-all active:scale-98 mt-2"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-950 font-extrabold text-sm py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] cursor-pointer transition-all active:scale-98 mt-2"
                 >
                   <span>{authMode === "login" ? "Authenticate & Enter Workspace" : "Register Profile & Login"}</span>
                   <ArrowRight size={14} className="stroke-[2.5]" />
@@ -1662,7 +1665,7 @@ export default function App() {
                     onClick={handleOpenDemoProfile}
                     className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl border font-extrabold text-sm transition-all cursor-pointer shadow-sm ${isDark
                         ? "border-sky-500/20 bg-sky-500/5 hover:bg-sky-500/10 text-sky-400"
-                        : "border-sky-200 bg-white hover:bg-sky-50 text-sky-700 hover:border-sky-400"
+                        : "border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 hover:border-indigo-400"
                       }`}
                   >
                     <UserCheck size={12} />
@@ -3336,7 +3339,7 @@ export default function App() {
                     onClick={handleOpenDemoProfile}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border font-bold text-[11px] transition-all cursor-pointer ${isDark
                         ? "border-sky-500/20 bg-sky-500/5 hover:bg-sky-500/10 text-sky-400"
-                        : "border-sky-200 bg-white hover:bg-sky-50 text-sky-700 hover:border-sky-400"
+                        : "border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 hover:border-indigo-400"
                       }`}
                   >
                     <UserCheck size={12} />
