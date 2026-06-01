@@ -1195,8 +1195,8 @@ export default function App() {
     : "text-[11px] font-black tracking-widest uppercase text-indigo-950 font-mono flex items-center gap-1.5";
 
   const previewColumnBgClass = isDark
-    ? "flex flex-col items-center bg-zinc-905/10 rounded-2xl border border-zinc-850 p-4 w-full h-full xl:max-h-[calc(100vh-112px)] overflow-hidden"
-    : "flex flex-col items-center bg-white/95 rounded-2xl border border-sky-100 p-4 w-full h-full shadow-[0_16px_50px_rgba(14,165,233,0.08)] xl:max-h-[calc(100vh-112px)] overflow-hidden";
+    ? "flex flex-col items-center bg-zinc-905/10 rounded-2xl border border-zinc-850 p-4 w-full h-full xl:max-h-[calc(100vh-112px)] overflow-auto"
+    : "flex flex-col items-center bg-white/95 rounded-2xl border border-sky-100 p-4 w-full h-full shadow-[0_16px_50px_rgba(14,165,233,0.08)] xl:max-h-[calc(100vh-112px)] overflow-auto";
 
   const presetBtnClass = (active: boolean) => {
     if (active) {
