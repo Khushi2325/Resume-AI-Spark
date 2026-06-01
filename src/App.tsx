@@ -1171,8 +1171,8 @@ export default function App() {
     : "text-slate-800 border-slate-200 bg-white/60 backdrop-blur-md";
 
   const sidebarClass = isDark
-    ? "lg:col-span-12 xl:col-span-5 flex flex-col gap-6 text-[#ebd9cd] h-full"
-    : "lg:col-span-12 xl:col-span-5 flex flex-col gap-6 text-slate-800 h-full";
+    ? "lg:col-span-12 xl:col-span-5 flex flex-col gap-6 text-[#ebd9cd] h-full xl:max-h-[calc(100vh-112px)] xl:overflow-y-auto xl:pr-2 overscroll-contain"
+    : "lg:col-span-12 xl:col-span-5 flex flex-col gap-6 text-slate-800 h-full xl:max-h-[calc(100vh-112px)] xl:overflow-y-auto xl:pr-2 overscroll-contain";
 
   const titleTextClass = isDark ? "text-neutral-50 font-display" : "text-slate-900 font-display font-extrabold";
   const subTitleTextClass = isDark ? "text-neutral-400 font-mono" : "text-slate-500 font-mono";
@@ -1191,8 +1191,8 @@ export default function App() {
     : "text-[11px] font-black tracking-widest uppercase text-indigo-950 font-mono flex items-center gap-1.5";
 
   const previewColumnBgClass = isDark
-    ? "flex flex-col items-center bg-zinc-905/10 rounded-2xl border border-zinc-850 p-4 w-full h-full"
-    : "flex flex-col items-center bg-white/95 rounded-2xl border border-sky-100 p-6 w-full h-full shadow-[0_16px_50px_rgba(14,165,233,0.08)]";
+    ? "flex flex-col items-center bg-zinc-905/10 rounded-2xl border border-zinc-850 p-4 w-full h-full xl:max-h-[calc(100vh-112px)] overflow-hidden"
+    : "flex flex-col items-center bg-white/95 rounded-2xl border border-sky-100 p-6 w-full h-full shadow-[0_16px_50px_rgba(14,165,233,0.08)] xl:max-h-[calc(100vh-112px)] overflow-hidden";
 
   const presetBtnClass = (active: boolean) => {
     if (active) {
@@ -2070,7 +2070,7 @@ export default function App() {
 
 
         {/* ================= MAIN CONTAINER BODY ================= */}
-        <main className="flex-1 p-4 lg:p-6 flex flex-col w-full max-w-[1750px] lg:px-8 xl:px-10 mx-auto relative">
+        <main className="flex-1 p-4 lg:p-6 flex flex-col w-full max-w-[1750px] lg:px-8 xl:px-10 mx-auto relative xl:overflow-hidden">
 
           {appRoute === "resumes" ? (() => {
             const pageSize = 6;
@@ -2149,7 +2149,7 @@ export default function App() {
             );
           })() : (<>
           {/* Workspace Split Layout */}
-          <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
+          <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full xl:h-[calc(100vh-112px)] xl:overflow-hidden">
 
             {/* Sidebar controls (Left Column) - shown for all logged-in users */}
             {sidebarOpen && (
@@ -2648,7 +2648,7 @@ export default function App() {
             {/* Realtime visual workspace panel (Right Column) */}
             <div
               ref={previewContainerRef}
-              className={`${sidebarOpen ? "lg:col-span-12 xl:col-span-7" : "lg:col-span-12 xl:col-span-12"} lg:sticky lg:top-24 ${previewColumnBgClass}`}
+              className={`${sidebarOpen ? "lg:col-span-12 xl:col-span-7" : "lg:col-span-12 xl:col-span-12"} ${previewColumnBgClass}`}
             >
               {/* Document Interactive Controller Toolbar */}
               <div className={`w-full mb-4 p-2.5 rounded-2xl border flex flex-col xl:flex-row items-center justify-between gap-3 text-xs ${isDark ? "bg-slate-950/80 border-slate-900 text-slate-300" : "bg-white border-slate-205 text-slate-705 shadow-sm"
@@ -2771,7 +2771,7 @@ export default function App() {
               </div>
 
               {/* Simulated letter paper sheet */}
-              <div className="w-full overflow-x-auto flex justify-center py-0.5 select-text">
+              <div className="w-full flex-1 min-h-0 overflow-auto flex justify-center py-0.5 select-text">
                 <div
                   className={`print-wrapper relative overflow-visible mx-auto flex justify-center py-2 shrink-0 rounded-sm bg-white ${isDark ? "shadow-2xl border border-slate-850" : "shadow-md border border-slate-200"
                     }`}
