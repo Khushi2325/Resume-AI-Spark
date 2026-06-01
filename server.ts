@@ -854,7 +854,12 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
       } catch { /* silent */ }
     }
 
-    // ── 3. Text-level URL regex scan ──────────────────────────────────────────
+    // ── 3. Check for extraction failure ───────────────────────────────────────
+    if (!rawText || rawText.trim().length < 20) {
+      return res.status(400).json({ error: "Could not extract any readable text from the provided file. Make sure it is a text-based PDF and the server dependencies are correctly loaded." });
+    }
+
+    // ── 4. Text-level URL regex scan ──────────────────────────────────────────
     const knownDomains = [
       "github.com", "linkedin.com", "leetcode.com",
       "vercel.app", "netlify.app", "railway.app", "render.com",
