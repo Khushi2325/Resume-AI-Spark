@@ -11,6 +11,7 @@ import { LatexPrintView, ResumeLayout, CustomTemplateConfig, CustomSectionKey } 
 import { ResumeDataEditor } from "./components/ResumeDataEditor";
 import { DigitalDashboard } from "./components/DigitalDashboard";
 import {
+  AlertTriangle,
   FileCode,
   Layout,
   Columns,
@@ -319,16 +320,32 @@ export default function App() {
   const loadSupabaseUser = async (userId: string, fallbackEmail?: string | null) => {
     if (!supabase) return;
 
-    const { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("id, username, email")
       .eq("id", userId)
       .single();
 
     if (profileError || !profile) {
-      console.error("Failed to load Supabase profile:", profileError);
-      setAuthError("Your account exists, but the profile table could not be loaded. Please check the Supabase schema.");
-      return;
+      console.warn("Profile not found, attempting to create one...", profileError);
+      
+      const newProfile = {
+        id: userId,
+        email: fallbackEmail || "",
+        username: (fallbackEmail || "user").split("@")[0],
+      };
+
+      const { error: insertError } = await supabase
+        .from("profiles")
+        .insert([newProfile]);
+
+      if (insertError) {
+        console.error("Failed to create profile:", insertError);
+        setAuthError("Failed to create user profile in database. Please check Supabase permissions.");
+        return;
+      }
+      
+      profile = newProfile;
     }
 
     const resolvedEmail = profile.email || fallbackEmail || "";
