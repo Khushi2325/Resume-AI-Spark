@@ -16,13 +16,18 @@ html, body, #root {
   overflow-y: auto !important;
 }
 
+/* The export PDF must stay as real DOM text/links, not a rasterized preview. */
+.print-export-root {
+  display: none;
+}
+
 /* Custom print layouts */
 @media print {
-  /* Hide interactive elements, background, etc */
-  .no-print {
-    display: none !important;
+  html, body, #root {
+    overflow: visible !important;
+    height: auto !important;
   }
-  
+
   body {
     background: white !important;
     color: black !important;
@@ -30,6 +35,39 @@ html, body, #root {
     padding: 0 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  #root > :not(.print-export-root) {
+    display: none !important;
+  }
+
+  .print-export-root {
+    display: block !important;
+    width: 8.5in !important;
+    min-height: 11in !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Hide interactive elements, background, etc */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Keep the printable resume simple so Chrome preserves text and link annotations. */
+  .print-export-root,
+  .print-export-root * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    transition: none !important;
+    animation: none !important;
+    mix-blend-mode: normal !important;
+    opacity: 1 !important;
+    transform: none !important;
+    mask: none !important;
+    -webkit-mask: none !important;
   }
 
   /* Force exact premium specifications on printout */
@@ -53,13 +91,18 @@ html, body, #root {
   }
 
   .print-container {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 8.5in !important;
+    max-width: 8.5in !important;
+    min-height: 11in !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
     background: white !important;
     height: auto !important;
+    overflow: hidden !important;
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
   }
 
   /* Set print page margins */
@@ -95,4 +138,3 @@ html, body, #root {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
-

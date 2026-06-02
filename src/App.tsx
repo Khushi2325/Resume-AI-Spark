@@ -692,8 +692,100 @@ export default function App() {
   const [accentTheme, setAccentTheme] = useState<"sky" | "indigo" | "teal" | "emerald">("sky");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePdfExport = async () => {
+    const resumeEl =
+      document.querySelector<HTMLElement>(".print-export-root #latex-print-view") ??
+      document.getElementById("latex-print-view");
+
+    if (!resumeEl) {
+      alert("Resume preview not found.");
+      return;
+    }
+
+    const printableStyles = Array.from(document.styleSheets)
+      .map((sheet) => {
+        try {
+          return `<style>${Array.from(sheet.cssRules).map((rule) => rule.cssText).join("\n")}</style>`;
+        } catch {
+          const ownerNode = sheet.ownerNode;
+          return ownerNode instanceof HTMLStyleElement || ownerNode instanceof HTMLLinkElement
+            ? ownerNode.outerHTML
+            : "";
+        }
+      })
+      .join("\n");
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <base href="${window.location.origin}" />
+  <title>Resume PDF Export</title>
+  ${printableStyles}
+  <style>
+    @page { size: letter; margin: 0; }
+    html, body {
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0;
+      padding: 0;
+      background: white;
+      color: black;
+      overflow: visible;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
+      filter: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      mix-blend-mode: normal !important;
+      mask: none !important;
+      -webkit-mask: none !important;
+    }
+    .print-container {
+      width: 8.5in !important;
+      max-width: 8.5in !important;
+      min-height: 11in !important;
+      margin: 0 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      background: white !important;
+      overflow: hidden !important;
+    }
+    .print\\:hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>${resumeEl.outerHTML}</body>
+</html>`;
+
+    try {
+      const response = await fetch("/api/export-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html })
+      });
+      
+      if (!response.ok) throw new Error("Failed to generate PDF");
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${resumeData.personalInfo.name.replace(/\s+/g, "_")}_Resume.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export PDF directly. Please use the Print button instead.");
+    }
   };
 
   const handleReset = () => {
@@ -1948,12 +2040,13 @@ export default function App() {
                 )}
 
                 <button
-                  onClick={handlePrint}
+                  onClick={handlePdfExport}
                   className={`h-9 flex items-center justify-center gap-1.5 font-bold text-xs px-4 rounded-xl shadow cursor-pointer transition-all active:scale-95 ${isDark ? "bg-white text-slate-950 hover:bg-slate-100" : "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] hover:-translate-y-0.25"
                     }`}
+                  title="Download resume as PDF"
                 >
-                  <Printer size={13} className="stroke-[2.5]" />
-                  Print / Save PDF
+                  <Download size={13} className="stroke-[2.5]" />
+                  Download PDF
                 </button>
 
                 {/* Export JSON Details */}
@@ -3333,7 +3426,7 @@ export default function App() {
       {/* ============================================================= */}
       {/* H. PRINT-ONLY VISUAL RESUME STYLES (HIDDEN EXCEPT WHEN PRINTING) */}
       {/* ============================================================= */}
-      <div className="hidden print:block w-full">
+      <div className="print-export-root hidden print:block w-full">
         <LatexPrintView
           data={resumeData}
           fontSize={fontSize}

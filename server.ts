@@ -3,13 +3,15 @@ import path from "path";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import multer from "multer";
+import puppeteer from "puppeteer";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -698,6 +700,36 @@ CRITICAL TONE & CONVERSATIONAL RULES (STRICT COMPLIANCE REQUIRED):
 // ─────────────────────────────────────────────────────────────────────────────
 // Resume PDF Parser
 // ─────────────────────────────────────────────────────────────────────────────
+app.post("/api/export-pdf", async (req, res) => {
+  try {
+    const { html } = req.body;
+    if (!html) {
+      return res.status(400).json({ error: "Missing HTML content" });
+    }
+
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+    
+    const pdfBuffer = await page.pdf({
+      format: "Letter",
+      printBackground: true,
+      margin: { top: 0, right: 0, bottom: 0, left: 0 }
+    });
+
+    await browser.close();
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Length": pdfBuffer.length
+    });
+    res.send(Buffer.from(pdfBuffer));
+  } catch (error) {
+    console.error("PDF Export Error:", error);
+    res.status(500).json({ error: "Failed to generate PDF." });
+  }
+});
+
 app.post("/api/template-recommendations", async (req, res) => {
   try {
     const { resume, purpose } = req.body;
@@ -875,7 +907,52 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
     const allUrls = [...new Set([...annotationUrls, ...textUrls].map((u) => u.trim()).filter(Boolean))];
     console.log("[ResumeParser] Extracted URLs from PDF:", allUrls);
 
-    const parsed = parseResumeLocally(rawText, allUrls);
+    let parsed: ResumeData;
+    try {
+      console.log("[ResumeParser] Requesting AI structured parsing via Gemini...");
+      const prompt = `You are an expert resume parsing AI.
+I am providing the raw text extracted from a resume PDF, as well as a list of URLs found in the PDF.
+Your task is to intelligently parse the resume and return a completely valid JSON object adhering EXACTLY to the structure requested.
+Extract ALL bullet points, experiences, projects, skills, education, and certifications accurately. 
+Map URLs to their correct fields (e.g. githubUrl, liveUrl, linkedin, etc).
+If a field or section is missing, use an empty string "" or empty array [].
+Generate random string IDs for arrays (e.g., "exp-1", "edu-1").
+
+Extracted URLs:
+${JSON.stringify(allUrls)}
+
+Raw Resume Text:
+================
+${rawText}
+================
+
+Return ONLY a JSON object (no markdown blocks, no backticks, no text outside JSON) matching this exact structure:
+{
+  "isFallback": false,
+  "personalInfo": { "name": "", "phone": "", "email": "", "github": "", "linkedin": "", "leetcode": "" },
+  "professionalSummary": "",
+  "education": [{ "id": "1", "institution": "", "years": "", "degree": "", "location": "" }],
+  "experience": [{ "id": "1", "company": "", "role": "", "duration": "", "location": "", "bullets": [""] }],
+  "skills": [{ "id": "1", "category": "", "skills": [""] }],
+  "projects": [{ "id": "1", "title": "", "year": "", "bullets": [""], "techStack": [""], "githubUrl": "", "liveUrl": "" }],
+  "certifications": [{ "id": "1", "title": "", "issuer": "", "year": "", "bullets": [""], "certificateUrl": "", "badgeUrl": "" }]
+}`;
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: { temperature: 0.1 },
+      });
+      const raw = response.text || "";
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        parsed = JSON.parse(match[0]);
+      } else {
+        throw new Error("No JSON found in AI response");
+      }
+    } catch (aiError) {
+      console.warn("[ResumeParser] AI parsing failed, falling back to regex parser:", aiError);
+      parsed = parseResumeLocally(rawText, allUrls);
+    }
 
     // ── 9. Ensure https:// on all URL fields ──────────────────────────────────
     const toHttps = (url: string): string => {
