@@ -709,7 +709,7 @@ app.post("/api/export-pdf", async (req, res) => {
 
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
     
     const pdfBuffer = await page.pdf({
       format: "Letter",

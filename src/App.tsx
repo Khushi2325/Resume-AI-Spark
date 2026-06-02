@@ -183,6 +183,13 @@ export default function App() {
   });
 
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [usernameInput, setUsernameInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  
+  const isValidEmailAddress = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidUsername = (username: string) => /^[a-zA-Z0-9_]{3,24}$/.test(username);
 
   // Landing Page Interactive Demo States
   const [landingDemoTab, setLandingDemoTab] = useState<"chat" | "spacing" | "lens">("chat");
