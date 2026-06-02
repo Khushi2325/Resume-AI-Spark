@@ -48,3 +48,22 @@ export const extractUsername = (
   const parts = cleanUrl.split("/");
   return parts[parts.length - 1] || null;
 };
+
+/**
+ * Ensures a URL is absolute (starts with http://, https://, mailto:, etc.)
+ * so it's clickable in exported PDFs.
+ */
+export const ensureAbsoluteUrl = (url: string | undefined | null): string | undefined => {
+  if (!url) return url || undefined;
+  const trimmed = url.trim();
+  if (trimmed === "") return trimmed;
+  if (
+    trimmed.startsWith("http://") || 
+    trimmed.startsWith("https://") || 
+    trimmed.startsWith("mailto:") || 
+    trimmed.startsWith("tel:")
+  ) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};

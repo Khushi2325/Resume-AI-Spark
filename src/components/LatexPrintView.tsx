@@ -1,7 +1,7 @@
 import React from "react";
 import { ResumeData } from "../types";
 import { Phone, Mail, Github, Linkedin, Code, MapPin, ExternalLink } from "lucide-react";
-import { isValidLink, extractUsername } from "../utils";
+import { isValidLink, extractUsername, ensureAbsoluteUrl } from "../utils";
 
 export type ResumeLayout =
   | "classic"        // 1. Classic Scholar — centered name, colored section underlines
@@ -54,11 +54,11 @@ function ContactLine({ data, showIcons, separator = " | ", className = "" }: {
   if (isValidLink(data.email, "email"))
     items.push(<a key="em" href={`mailto:${data.email}`} className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Mail size={8} />}{data.email}</a>);
   if (isValidLink(data.github, "github"))
-    items.push(<a key="gh" href={data.github} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Github size={8} />}GitHub</a>);
+    items.push(<a key="gh" href={ensureAbsoluteUrl(data.github)} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Github size={8} />}GitHub</a>);
   if (isValidLink(data.linkedin, "linkedin"))
-    items.push(<a key="li" href={data.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Linkedin size={8} />}LinkedIn</a>);
+    items.push(<a key="li" href={ensureAbsoluteUrl(data.linkedin)} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Linkedin size={8} />}LinkedIn</a>);
   if (isValidLink(data.leetcode, "leetcode"))
-    items.push(<a key="lc" href={data.leetcode} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Code size={8} />}LeetCode</a>);
+    items.push(<a key="lc" href={ensureAbsoluteUrl(data.leetcode)} target="_blank" rel="noreferrer" className="flex items-center gap-0.5 text-[#002fa7] hover:underline">{showIcons && <Code size={8} />}LeetCode</a>);
 
   return (
     <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${className}`}>
@@ -184,13 +184,13 @@ function ClassicScholar({ data, fs, lh, mar, sp, font, icons }: any) {
                     {p.githubUrl && (
                       <span style={{ color: "#555", fontStyle: "italic" }}>
                         GitHub:{" "}
-                        <a href={p.githubUrl} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontStyle: "normal", fontWeight: 600 }}>Repository</a>
+                        <a href={ensureAbsoluteUrl(p.githubUrl)} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontStyle: "normal", fontWeight: 600 }}>Repository</a>
                       </span>
                     )}
                     {p.liveUrl && (
                       <span style={{ color: "#555", fontStyle: "italic" }}>
                         Live:{" "}
-                        <a href={p.liveUrl} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontStyle: "normal", fontWeight: 600 }}>Website</a>
+                        <a href={ensureAbsoluteUrl(p.liveUrl)} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontStyle: "normal", fontWeight: 600 }}>Website</a>
                       </span>
                     )}
                   </div>
@@ -229,8 +229,8 @@ function ClassicScholar({ data, fs, lh, mar, sp, font, icons }: any) {
                 </div>
                 {(c.certificateUrl || c.badgeUrl) && (
                   <div style={{ display: "flex", gap: "10px", fontSize: `${fs - 1}pt`, marginTop: "1px", marginBottom: "2px" }}>
-                    {c.certificateUrl && <a href={c.certificateUrl} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontWeight: 600 }}>View Certificate</a>}
-                    {c.badgeUrl && <a href={c.badgeUrl} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontWeight: 600 }}>View Badge</a>}
+                    {c.certificateUrl && <a href={ensureAbsoluteUrl(c.certificateUrl)} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontWeight: 600 }}>View Certificate</a>}
+                    {c.badgeUrl && <a href={ensureAbsoluteUrl(c.badgeUrl)} target="_blank" rel="noreferrer" style={{ color: "#002fa7", fontWeight: 600 }}>View Badge</a>}
                   </div>
                 )}
                 <ul style={{ paddingLeft: "0", marginTop: "2px", listStyle: "none", display: "flex", flexDirection: "column", gap: "1px" }}>
@@ -282,9 +282,9 @@ function TwoColumnPro({ data, fs, lh, mar, sp, font, icons }: any) {
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: `${fs - 1}pt`, color: "#374151" }}>
           {isValidLink(pi.phone, "phone") && <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Phone size={8} />}{pi.phone}</span>}
           {isValidLink(pi.email, "email") && <a href={`mailto:${pi.email}`} style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Mail size={8} />}{pi.email}</a>}
-          {isValidLink(pi.github, "github") && <a href={pi.github} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Github size={8} />}GitHub</a>}
-          {isValidLink(pi.linkedin, "linkedin") && <a href={pi.linkedin} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Linkedin size={8} />}LinkedIn</a>}
-          {isValidLink(pi.leetcode, "leetcode") && <a href={pi.leetcode} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Code size={8} />}LeetCode</a>}
+          {isValidLink(pi.github, "github") && <a href={ensureAbsoluteUrl(pi.github)} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Github size={8} />}GitHub</a>}
+          {isValidLink(pi.linkedin, "linkedin") && <a href={ensureAbsoluteUrl(pi.linkedin)} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Linkedin size={8} />}LinkedIn</a>}
+          {isValidLink(pi.leetcode, "leetcode") && <a href={ensureAbsoluteUrl(pi.leetcode)} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "4px" }}>{icons && <Code size={8} />}LeetCode</a>}
         </div>
 
         {/* Education in sidebar */}
@@ -505,8 +505,8 @@ function AcademicTabular({ data, fs, lh, mar, sp, font, icons }: any) {
         <div style={{ textAlign: "right", fontSize: `${fs - 0.5}pt`, color: "#374151", lineHeight: 1.6 }} className="flex flex-col items-end">
           {isValidLink(pi.phone, "phone") && <div className="flex items-center gap-1.5">{icons && <Phone size={8} />}{pi.phone}</div>}
           {isValidLink(pi.email, "email") && <div><a href={`mailto:${pi.email}`} className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Mail size={8} />}{pi.email}</a></div>}
-          {isValidLink(pi.github, "github") && <div><a href={pi.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Github size={8} />}GitHub</a></div>}
-          {isValidLink(pi.linkedin, "linkedin") && <div><a href={pi.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Linkedin size={8} />}LinkedIn</a></div>}
+          {isValidLink(pi.github, "github") && <div><a href={ensureAbsoluteUrl(pi.github)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Github size={8} />}GitHub</a></div>}
+          {isValidLink(pi.linkedin, "linkedin") && <div><a href={ensureAbsoluteUrl(pi.linkedin)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#1d4ed8" }}>{icons && <Linkedin size={8} />}LinkedIn</a></div>}
         </div>
       </div>
 
@@ -641,8 +641,8 @@ function CvAcademic({ data, fs, lh, mar, sp, font, icons }: any) {
         <div style={{ textAlign: "right", fontSize: `${fs - 0.5}pt`, color: "#374151", lineHeight: 1.8 }} className="flex flex-col items-end">
           {isValidLink(pi.phone, "phone") && <div className="flex items-center gap-1.5">{icons && <Phone size={8} />}{pi.phone}</div>}
           {isValidLink(pi.email, "email") && <div><a href={`mailto:${pi.email}`} className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Mail size={8} />}{pi.email}</a></div>}
-          {isValidLink(pi.github, "github") && <div><a href={pi.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Github size={8} />}GitHub</a></div>}
-          {isValidLink(pi.linkedin, "linkedin") && <div><a href={pi.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Linkedin size={8} />}LinkedIn</a></div>}
+          {isValidLink(pi.github, "github") && <div><a href={ensureAbsoluteUrl(pi.github)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Github size={8} />}GitHub</a></div>}
+          {isValidLink(pi.linkedin, "linkedin") && <div><a href={ensureAbsoluteUrl(pi.linkedin)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5" style={{ color: "#0d9488" }}>{icons && <Linkedin size={8} />}LinkedIn</a></div>}
         </div>
       </div>
       <div style={{ borderBottom: "1.5px solid #111827", marginBottom: `${sp}px` }} />
