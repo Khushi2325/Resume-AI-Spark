@@ -707,7 +707,10 @@ app.post("/api/export-pdf", async (req, res) => {
       return res.status(400).json({ error: "Missing HTML content" });
     }
 
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ 
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "domcontentloaded" });
     
