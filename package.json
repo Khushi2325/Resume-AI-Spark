@@ -8,11 +8,11 @@
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit",
-    "render-build": "npm run build && npx playwright install-deps chromium"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
+    "@sparticuz/chromium": "^133.0.0",
     "@supabase/supabase-js": "^2.106.2",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
@@ -22,7 +22,7 @@
     "motion": "^12.23.24",
     "multer": "^2.1.1",
     "pdf-parse": "^2.4.5",
-    "puppeteer": "^25.1.0",
+    "puppeteer-core": "^23.11.1",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3"
